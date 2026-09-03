@@ -1,5 +1,5 @@
 export const APP_NAME = 'Watching';
-export const APP_VERSION = '0.2.0';
+export const APP_VERSION = '0.2.1';
 export const GITHUB_PAGES_BASE = '/watching/';
 
 export function getPublicConfig(source = globalThis.WATCHING_CONFIG ?? {}) {

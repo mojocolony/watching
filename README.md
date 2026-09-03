@@ -2,9 +2,9 @@
 
 Watching is a deliberately lightweight personal TV-progress tracker. It keeps two manually ordered lists, **Now Watching** and **Queued Up**, with collapsible episode lists, watched progress, runtimes, a “with Priya” marker/filter, season completion, and Archive.
 
-Version: **0.2.0**
+Version: **0.2.1**
 
-## What v0.2.0 does
+## What v0.2.1 does
 
 - Manually ordered **Now Watching** and **Queued Up** sections
 - Drag shows within a section or between sections

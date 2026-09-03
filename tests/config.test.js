@@ -4,7 +4,7 @@ import { APP_NAME, APP_VERSION, GITHUB_PAGES_BASE } from '../src/config.js';
 
 test('exposes the fixed app identity', () => {
   assert.equal(APP_NAME, 'Watching');
-  assert.equal(APP_VERSION, '0.2.0');
+  assert.equal(APP_VERSION, '0.2.1');
   assert.equal(GITHUB_PAGES_BASE, '/watching/');
 });
 

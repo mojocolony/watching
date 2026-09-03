@@ -11,15 +11,16 @@
   --accent-soft: #dfe3e6;
   --danger: #6d3c3c;
   --radius: 15px;
-  --font-size: 17px;
+  --font-size: 22px;
+  --meta-font-size: calc(var(--font-size) * .78);
   font-family: "IBM Plex Mono", "SFMono-Regular", Consolas, "Liberation Mono", monospace;
   background: var(--bg);
   color: var(--text);
 }
 
-html[data-font-scale="small"] { --font-size: 15.5px; }
-html[data-font-scale="medium"] { --font-size: 17px; }
-html[data-font-scale="large"] { --font-size: 19px; }
+html[data-font-scale="small"] { --font-size: 20px; }
+html[data-font-scale="medium"] { --font-size: 22px; }
+html[data-font-scale="large"] { --font-size: 24px; }
 
 html[data-theme="light"] {
   color-scheme: light;
@@ -138,14 +139,14 @@ button:focus-visible, input:focus-visible {
 .show-title {
   overflow: hidden;
   color: var(--text);
-  font-size: 1.06em;
+  font-size: 1em;
   font-weight: 500;
   letter-spacing: -.028em;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 .priya-marker { display: inline-flex; flex: none; color: var(--muted); }
-.show-meta { color: var(--muted); font-size: .78em; letter-spacing: -.015em; }
+.show-meta { color: var(--muted); font-size: var(--meta-font-size); letter-spacing: -.015em; }
 .show-chevron { color: var(--muted); flex: none; }
 .show-actions-button {
   display: grid; flex: none; width: 42px; height: 44px; place-items: center; padding: 0; border: 0;
@@ -159,7 +160,7 @@ button:focus-visible, input:focus-visible {
 }
 .show-actions-menu button {
   display: block; width: 100%; min-height: 46px; padding: 0 14px; border: 0; border-bottom: 1px solid var(--line);
-  background: transparent; color: var(--text); text-align: left; cursor: pointer;
+  background: transparent; color: var(--text); font-size: var(--meta-font-size); text-align: left; cursor: pointer;
 }
 .show-actions-menu button:last-child { border-bottom: 0; }
 .show-actions-menu .show-actions-danger { color: var(--danger); }
