@@ -31,16 +31,24 @@ test('preferences use the agreed defaults', () => {
     watchingCollapsed: false,
     queuedCollapsed: false,
     priyaFilter: false,
+    themeMode: 'system',
   });
 });
 
 test('preferences reject invalid scale and preserve booleans', () => {
   const storage = memoryStorage();
-  writePreferences({ fontScale: 'huge', watchingCollapsed: true, queuedCollapsed: true, priyaFilter: true }, storage);
+  writePreferences({ fontScale: 'huge', watchingCollapsed: true, queuedCollapsed: true, priyaFilter: true, themeMode: 'neon' }, storage);
   assert.deepEqual(readPreferences(storage), {
     fontScale: 'medium',
     watchingCollapsed: true,
     queuedCollapsed: true,
     priyaFilter: true,
+    themeMode: 'system',
   });
+});
+
+test('preferences preserve a valid theme mode', () => {
+  const storage = memoryStorage();
+  writePreferences({ fontScale: 'large', themeMode: 'dark' }, storage);
+  assert.equal(readPreferences(storage).themeMode, 'dark');
 });

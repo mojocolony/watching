@@ -1,6 +1,7 @@
 import { toggleEpisodeWatched } from '../domain/shows.js';
 
 const FONT_SCALES = new Set(['small', 'medium', 'large']);
+const THEME_MODES = new Set(['system', 'light', 'dark']);
 
 export function reduceState(state, action) {
   switch (action.type) {
@@ -24,18 +25,24 @@ export function reduceState(state, action) {
     case 'set-font-scale':
       if (!FONT_SCALES.has(action.fontScale)) return state;
       return { ...state, preferences: { ...state.preferences, fontScale: action.fontScale } };
+    case 'set-theme-mode':
+      return { ...state, preferences: { ...state.preferences, themeMode: THEME_MODES.has(action.themeMode) ? action.themeMode : 'system' } };
     case 'open-menu':
-      return { ...state, menuOpen: true };
+      return { ...state, menuOpen: true, showMenuId: null };
+    case 'open-show-menu':
+      return { ...state, showMenuId: action.showId, menuOpen: false };
+    case 'close-show-menu':
+      return { ...state, showMenuId: null };
     case 'close-menu':
       return { ...state, menuOpen: false };
     case 'open-add':
-      return { ...state, sheet: 'add', editingShowId: null, menuOpen: false };
+      return { ...state, sheet: 'add', editingShowId: null, menuOpen: false, showMenuId: null };
     case 'open-edit':
-      return { ...state, sheet: 'edit', editingShowId: action.showId, menuOpen: false };
+      return { ...state, sheet: 'edit', editingShowId: action.showId, menuOpen: false, showMenuId: null };
     case 'close-sheet':
       return { ...state, sheet: null, editingShowId: null };
     case 'open-archive':
-      return { ...state, view: 'archive', menuOpen: false, sheet: null };
+      return { ...state, view: 'archive', menuOpen: false, sheet: null, showMenuId: null };
     case 'close-archive':
       return { ...state, view: 'main' };
     case 'set-completion':

@@ -36,7 +36,7 @@ export function renderFetchedSetup(result, seasons) {
     <button class="primary-button" type="button" data-action="save-fetched-show">Add show</button>`;
 }
 
-export function buildFetchedShow({ result, season, episodes, section, withPriya, sortOrder, id }) {
+export function buildFetchedShow({ result, season, episodes, section, withPriya, sortOrder, id, totalSeasons = null }) {
   return {
     id,
     source: 'tvmaze',
@@ -47,6 +47,7 @@ export function buildFetchedShow({ result, season, episodes, section, withPriya,
     sortOrder,
     withPriya: Boolean(withPriya),
     currentSeason: season.seasonNumber,
+    totalSeasons: totalSeasons == null ? null : Number(totalSeasons),
     expanded: false,
     archivedAt: null,
     availableSeasonNumber: null,
@@ -85,6 +86,7 @@ export function buildManualShow({ id, title, seasonNumber, episodeCount, section
     sortOrder,
     withPriya: Boolean(withPriya),
     currentSeason: Number(seasonNumber),
+    totalSeasons: null,
     expanded: false,
     archivedAt: null,
     availableSeasonNumber: null,

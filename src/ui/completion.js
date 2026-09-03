@@ -14,15 +14,15 @@ export function renderCompletionSheet(show, nextSeasonNumber) {
     <div class="completion-actions">${nextActions}</div>`;
 }
 
-export function archiveShowLocally(show, completedAt) {
+export function archiveShowLocally(show, archivedAt, { completed = true } = {}) {
   return {
     ...show,
     section: 'archived',
-    archivedAt: completedAt,
+    archivedAt,
     availableSeasonNumber: null,
     expanded: false,
     seasons: (show.seasons ?? []).map(season => season.seasonNumber === show.currentSeason
-      ? { ...season, completedAt }
+      ? { ...season, completedAt: completed ? archivedAt : (season.completedAt ?? null) }
       : season),
   };
 }

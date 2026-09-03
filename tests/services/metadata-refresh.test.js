@@ -4,7 +4,7 @@ import { mergeTrackedShowMetadata, refreshTrackedMetadata, selectUpdateWindow } 
 
 const active = {
   id: 's1', source: 'tvmaze', sourceShowId: 12, sourceUpdatedAt: 10,
-  title: 'Show', section: 'watching', sortOrder: 2, withPriya: true, currentSeason: 1,
+  title: 'Show', section: 'watching', sortOrder: 2, withPriya: true, currentSeason: 1, totalSeasons: 1,
   episodes: [
     { id: 'local-e1', sourceEpisodeId: 101, episodeNumber: 1, title: 'TBA', runtimeMinutes: null, watched: true, airdate: null },
   ],
@@ -34,6 +34,7 @@ test('merges newly announced episode and metadata without changing user state', 
   assert.equal(merged.episodes[0].title, 'The Real Title');
   assert.equal(merged.episodes[0].runtimeMinutes, 52);
   assert.equal(merged.episodes[1].watched, false);
+  assert.equal(merged.totalSeasons, 1);
 });
 
 test('archived show gets a new-season marker without moving sections', () => {
@@ -44,6 +45,7 @@ test('archived show gets a new-season marker without moving sections', () => {
   ], []);
   assert.equal(merged.section, 'archived');
   assert.equal(merged.availableSeasonNumber, 2);
+  assert.equal(merged.totalSeasons, 2);
 });
 
 test('manual shows are not sent to TVmaze', async () => {
@@ -109,4 +111,20 @@ test('refresh uses repository-persisted ids for newly discovered episodes', asyn
   });
   const newEpisode = result.shows[0].episodes.find(ep => ep.sourceEpisodeId === 102);
   assert.equal(newEpisode.id, 'db-e2');
+});
+
+test('tracked shows missing total season count refresh even when update feed is quiet', async () => {
+  let seasonCalls = 0;
+  const result = await refreshTrackedMetadata({
+    shows: [{ ...active, totalSeasons: null }],
+    lastCheckedAt: '2026-09-03T10:00:00Z',
+    now: new Date('2026-09-03T12:00:00Z'),
+    tvmaze: {
+      getRecentShowUpdates: async () => ({}),
+      getShowSeasons: async () => { seasonCalls += 1; return [{ sourceSeasonId: 1, seasonNumber: 1 }, { sourceSeasonId: 2, seasonNumber: 2 }]; },
+      getSeasonEpisodes: async () => [{ sourceEpisodeId: 101, episodeNumber: 1, title: 'One', runtimeMinutes: 50, airdate: null }],
+    },
+  });
+  assert.equal(seasonCalls, 1);
+  assert.equal(result.shows[0].totalSeasons, 2);
 });

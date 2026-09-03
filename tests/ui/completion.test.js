@@ -41,3 +41,12 @@ test('starting next season resets episodes and moves to chosen section', () => {
   assert.equal(next.episodes[0].watched, false);
   assert.equal(next.episodes[0].runtimeMinutes, 51);
 });
+
+test('local unfinished archive preserves progress without marking season complete', () => {
+  const unfinished = { ...show, episodes: [{ id: 'e1', watched: false }] };
+  const next = archiveShowLocally(unfinished, '2026-09-03T22:00:00Z', { completed: false });
+  assert.equal(next.section, 'archived');
+  assert.equal(next.archivedAt, '2026-09-03T22:00:00Z');
+  assert.equal(next.seasons[0].completedAt ?? null, null);
+  assert.equal(next.episodes[0].watched, false);
+});

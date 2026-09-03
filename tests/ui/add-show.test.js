@@ -28,6 +28,7 @@ test('builds a fetched show preserving source ids and runtimes', () => {
   const show = buildFetchedShow({
     result: { sourceShowId: 12, title: 'Slow Horses' },
     season: { sourceSeasonId: 99, seasonNumber: 6 },
+    totalSeasons: 7,
     episodes: [{ sourceEpisodeId: 5, episodeNumber: 1, title: 'One', runtimeMinutes: 44, airdate: '2026-09-01' }],
     section: 'queued',
     withPriya: true,
@@ -37,6 +38,7 @@ test('builds a fetched show preserving source ids and runtimes', () => {
   assert.equal(show.source, 'tvmaze');
   assert.equal(show.sourceShowId, 12);
   assert.equal(show.currentSeason, 6);
+  assert.equal(show.totalSeasons, 7);
   assert.equal(show.section, 'queued');
   assert.equal(show.withPriya, true);
   assert.equal(show.episodes[0].sourceEpisodeId, 5);
@@ -50,6 +52,7 @@ test('builds a manual show with default episode titles and no source ids', async
   assert.equal(show.source, 'manual');
   assert.equal(show.sourceShowId, null);
   assert.equal(show.currentSeason, 2);
+  assert.equal(show.totalSeasons, null);
   assert.deepEqual(show.episodes.map(ep => ep.title), ['Episode 1', 'Episode 2', 'Episode 3']);
   assert.equal(show.season.seasonNumber, 2);
 });

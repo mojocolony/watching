@@ -32,6 +32,7 @@ export function mapDbShow(row) {
     sortOrder: Number(row.sort_order ?? 0),
     withPriya: Boolean(row.with_priya),
     currentSeason: Number(row.current_season),
+    totalSeasons: row.total_seasons == null ? null : Number(row.total_seasons),
     availableSeasonNumber: row.available_season_number == null ? null : Number(row.available_season_number),
     archivedAt: row.archived_at ?? null,
     expanded: false,
@@ -74,6 +75,7 @@ function showInsertPayload(userId, payload) {
     sort_order: payload.sortOrder ?? 0,
     with_priya: Boolean(payload.withPriya),
     current_season: Number(payload.currentSeason),
+    total_seasons: payload.totalSeasons == null ? null : Number(payload.totalSeasons),
     available_season_number: payload.availableSeasonNumber ?? null,
   };
 }
@@ -154,6 +156,7 @@ export function createRepository(client) {
       if ('sortOrder' in patch) dbPatch.sort_order = patch.sortOrder;
       if ('withPriya' in patch) dbPatch.with_priya = Boolean(patch.withPriya);
       if ('currentSeason' in patch) dbPatch.current_season = Number(patch.currentSeason);
+      if ('totalSeasons' in patch) dbPatch.total_seasons = patch.totalSeasons == null ? null : Number(patch.totalSeasons);
       if ('availableSeasonNumber' in patch) dbPatch.available_season_number = patch.availableSeasonNumber;
       if ('archivedAt' in patch) dbPatch.archived_at = patch.archivedAt;
       if ('sourceUpdatedAt' in patch) dbPatch.source_updated_at = patch.sourceUpdatedAt;
@@ -161,11 +164,11 @@ export function createRepository(client) {
       throwIf(error);
     },
 
-    async archiveShow(show, completedAt) {
-      await this.updateShow(show.id, { section: 'archived', archivedAt: completedAt, availableSeasonNumber: null });
+    async archiveShow(show, archivedAt, { completed = true } = {}) {
+      await this.updateShow(show.id, { section: 'archived', archivedAt, availableSeasonNumber: null });
       const current = (show.seasons ?? []).find(season => season.seasonNumber === show.currentSeason);
-      if (current?.id) {
-        const { error } = await client.from('watching_seasons').update({ completed_at: completedAt }).eq('id', current.id);
+      if (completed && current?.id) {
+        const { error } = await client.from('watching_seasons').update({ completed_at: archivedAt }).eq('id', current.id);
         throwIf(error);
       }
     },
@@ -203,6 +206,7 @@ export function createRepository(client) {
       await this.updateShow(showId, {
         sourceUpdatedAt: nextShow.sourceUpdatedAt,
         availableSeasonNumber: nextShow.availableSeasonNumber ?? null,
+        totalSeasons: nextShow.totalSeasons ?? null,
       });
       if (nextShow.section === 'archived') return nextShow;
       const season = (nextShow.seasons ?? []).find(item => item.seasonNumber === nextShow.currentSeason);

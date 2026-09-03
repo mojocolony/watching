@@ -5,6 +5,7 @@ const NODES = {
   hamburger: '<path d="M12 16H4a2 2 0 1 1 0-4h16a2 2 0 1 1 0 4h-4.25"></path><path d="M5 12a2 2 0 0 1-2-2 9 7 0 0 1 18 0 2 2 0 0 1-2 2"></path><path d="M5 16a2 2 0 0 0-2 2 3 3 0 0 0 3 3h12a3 3 0 0 0 3-3 2 2 0 0 0-2-2q0 0 0 0"></path><path d="m6.67 12 6.13 4.6a2 2 0 0 0 2.8-.4l3.15-4.2"></path>',
   'chevron-down': '<path d="m6 9 6 6 6-6"></path>',
   'chevron-up': '<path d="m18 15-6-6-6 6"></path>',
+  ellipsis: '<circle cx="5" cy="12" r="1"></circle><circle cx="12" cy="12" r="1"></circle><circle cx="19" cy="12" r="1"></circle>',
   x: '<path d="M18 6 6 18"></path><path d="m6 6 12 12"></path>',
   'arrow-left': '<path d="m12 19-7-7 7-7"></path><path d="M19 12H5"></path>',
 };

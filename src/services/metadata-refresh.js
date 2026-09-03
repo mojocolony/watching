@@ -23,11 +23,13 @@ export function mergeTrackedShowMetadata(show, seasons, incomingEpisodes) {
     const existing = existingSeasons.get(Number(season.seasonNumber));
     return existing ? { ...existing, ...season, id: existing.id ?? null, completedAt: existing.completedAt ?? null } : { ...season };
   }).sort((a, b) => a.seasonNumber - b.seasonNumber);
+  const totalSeasons = normalizedSeasons.length ? Math.max(...normalizedSeasons.map(season => Number(season.seasonNumber))) : (show.totalSeasons ?? null);
   if (show.section === 'archived') {
     const nextSeason = normalizedSeasons.find(season => season.seasonNumber > show.currentSeason);
     return {
       ...show,
       seasons: normalizedSeasons,
+      totalSeasons,
       availableSeasonNumber: nextSeason?.seasonNumber ?? null,
     };
   }
@@ -44,6 +46,7 @@ export function mergeTrackedShowMetadata(show, seasons, incomingEpisodes) {
   return {
     ...show,
     seasons: normalizedSeasons,
+    totalSeasons,
     episodes,
   };
 }
@@ -78,7 +81,7 @@ export async function refreshTrackedMetadata({ shows, lastCheckedAt, tvmaze, rep
     const batch = tracked.slice(offset, offset + 4);
     const results = await Promise.all(batch.map(async show => {
       const sourceStamp = updates?.[String(show.sourceShowId)];
-      if (updates && sourceStamp == null) return null;
+      if (updates && sourceStamp == null && show.totalSeasons != null) return null;
       try {
         const next = await refreshOne(show, tvmaze, sourceStamp);
         const didChange = JSON.stringify(next) !== JSON.stringify(show);

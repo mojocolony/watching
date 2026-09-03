@@ -40,6 +40,7 @@ let state = {
   view: 'main',
   completion: null,
   editingShowId: null,
+  showMenuId: null,
 };
 
 function initialShows() {
@@ -51,6 +52,7 @@ function initialShows() {
 function render() {
   root.innerHTML = renderAppMarkup(state);
   document.documentElement.dataset.fontScale = state.preferences.fontScale;
+  document.documentElement.dataset.theme = state.preferences.themeMode ?? 'system';
 }
 
 function commit(next, { cacheShows = false, savePrefs = false } = {}) {
@@ -95,6 +97,12 @@ root.addEventListener('click', event => {
     case 'close-menu':
       dispatch({ type: 'close-menu' });
       break;
+    case 'open-show-menu':
+      dispatch({ type: 'open-show-menu', showId: target.dataset.showId });
+      break;
+    case 'close-show-menu':
+      dispatch({ type: 'close-show-menu' });
+      break;
     case 'add-show':
       if (!ensureWritable()) break;
       dispatch({ type: 'open-add' });
@@ -118,6 +126,21 @@ root.addEventListener('click', event => {
       break;
     case 'set-font-scale':
       dispatch({ type: 'set-font-scale', fontScale: target.dataset.fontScale }, { savePrefs: true });
+      break;
+    case 'set-theme-mode':
+      dispatch({ type: 'set-theme-mode', themeMode: target.dataset.themeMode }, { savePrefs: true });
+      break;
+    case 'toggle-show-priya':
+      toggleShowPriya(target.dataset.showId);
+      break;
+    case 'move-show-section':
+      moveShowFromMenu(target.dataset.showId, target.dataset.section);
+      break;
+    case 'archive-show':
+      archiveShowFromMenu(target.dataset.showId);
+      break;
+    case 'resume-archived':
+      resumeArchivedShow(target.dataset.showId);
       break;
     case 'sign-in':
       handleSignIn();
@@ -231,7 +254,7 @@ async function startCompletionNextSeason(section) {
   if (!show || !season || !['watching', 'queued'].includes(section)) return;
   try {
     const episodes = await tvmaze.getSeasonEpisodes(season.sourceSeasonId);
-    const sortOrder = state.shows.filter(item => item.section === section && item.id !== show.id).length;
+    const sortOrder = nextSortOrder(section);
     if (repository) await repository.addSeason(show, season, episodes, section);
     const nextShow = { ...startNextSeasonLocally(show, { season, episodes, section }), sortOrder };
     state = {
@@ -310,6 +333,11 @@ async function selectSearchResult(index) {
   }
 }
 
+function nextSortOrder(section) {
+  const values = state.shows.filter(show => show.section === section).map(show => Number(show.sortOrder ?? 0));
+  return values.length ? Math.max(...values) + 1 : 0;
+}
+
 async function saveFetchedShow() {
   if (!ensureWritable()) return;
   if (!selectedSearchResult) return;
@@ -322,9 +350,10 @@ async function saveFetchedShow() {
   if (button) { button.disabled = true; button.textContent = 'Adding…'; }
   try {
     const episodes = await tvmaze.getSeasonEpisodes(season.sourceSeasonId);
-    const sortOrder = state.shows.filter(show => show.section === section).length;
+    const sortOrder = nextSortOrder(section);
     const id = globalThis.crypto?.randomUUID?.() ?? `show-${Date.now()}`;
-    const draft = buildFetchedShow({ result: selectedSearchResult, season, episodes, section, withPriya, sortOrder, id });
+    const totalSeasons = selectedSeasons.length ? Math.max(...selectedSeasons.map(item => Number(item.seasonNumber))) : null;
+    const draft = buildFetchedShow({ result: selectedSearchResult, season, episodes, section, withPriya, sortOrder, id, totalSeasons });
     const newShow = repository
       ? await repository.createShow(currentUser.id, { ...draft, season: draft.seasons[0] })
       : draft;
@@ -363,7 +392,8 @@ attachDragController(root, async ({ showId, targetSection, targetIndex }) => {
 
 root.addEventListener('keydown', event => {
   if (event.key !== 'Escape') return;
-  if (state.completion) dispatch({ type: 'clear-completion' });
+  if (state.showMenuId) dispatch({ type: 'close-show-menu' });
+  else if (state.completion) dispatch({ type: 'clear-completion' });
   else if (state.sheet) dispatch({ type: 'close-sheet' });
   else if (state.menuOpen) dispatch({ type: 'close-menu' });
   else if (state.view === 'archive') dispatch({ type: 'close-archive' });
@@ -404,7 +434,7 @@ async function saveManualShow() {
     showToast('Enter a show title.');
     return;
   }
-  const sortOrder = state.shows.filter(show => show.section === section).length;
+  const sortOrder = nextSortOrder(section);
   const id = globalThis.crypto?.randomUUID?.() ?? `show-${Date.now()}`;
   const draft = buildManualShow({ id, title, seasonNumber: season, episodeCount: count, section, withPriya, sortOrder });
   try {
@@ -454,6 +484,84 @@ async function saveEditShow() {
   render();
   showToast('Show updated.');
 }
+async function toggleShowPriya(showId) {
+  if (!ensureWritable()) return;
+  const show = state.shows.find(item => item.id === showId);
+  if (!show) return;
+  const withPriya = !show.withPriya;
+  try {
+    if (repository) await repository.updateShow(show.id, { withPriya });
+  } catch {
+    showToast('Could not update that show.');
+    return;
+  }
+  state = {
+    ...state,
+    shows: state.shows.map(item => item.id === show.id ? { ...item, withPriya } : item),
+    showMenuId: null,
+  };
+  writeCachedSnapshot({ shows: state.shows, cachedAt: new Date().toISOString() });
+  render();
+}
+
+async function moveShowFromMenu(showId, section) {
+  if (!ensureWritable() || !['watching', 'queued'].includes(section)) return;
+  const show = state.shows.find(item => item.id === showId);
+  if (!show || show.section === section) return;
+  const targetIndex = state.shows.filter(item => item.section === section && item.id !== show.id).length;
+  const nextShows = moveShow(state.shows, show.id, section, targetIndex);
+  try {
+    if (repository) await repository.saveShowPlacement(nextShows.filter(item => item.section !== 'archived'));
+  } catch {
+    showToast('Could not move that show.');
+    return;
+  }
+  state = { ...state, shows: nextShows, showMenuId: null };
+  writeCachedSnapshot({ shows: state.shows, cachedAt: new Date().toISOString() });
+  render();
+}
+
+async function archiveShowFromMenu(showId) {
+  if (!ensureWritable()) return;
+  const show = state.shows.find(item => item.id === showId);
+  if (!show || show.section === 'archived') return;
+  const archivedAt = new Date().toISOString();
+  const completed = isSeasonComplete(show);
+  try {
+    if (repository) await repository.archiveShow(show, archivedAt, { completed });
+  } catch {
+    showToast('Could not archive that show.');
+    return;
+  }
+  const archived = archiveShowLocally(show, archivedAt, { completed });
+  state = {
+    ...state,
+    shows: state.shows.map(item => item.id === show.id ? archived : item),
+    showMenuId: null,
+  };
+  writeCachedSnapshot({ shows: state.shows, cachedAt: archivedAt });
+  render();
+  showToast(`${show.title} archived.`);
+}
+
+async function resumeArchivedShow(showId) {
+  if (!ensureWritable()) return;
+  const show = state.shows.find(item => item.id === showId);
+  if (!show || show.section !== 'archived') return;
+  const sortOrder = nextSortOrder('watching');
+  try {
+    if (repository) await repository.updateShow(show.id, { section: 'watching', sortOrder, archivedAt: null, availableSeasonNumber: null });
+  } catch {
+    showToast('Could not restore that show.');
+    return;
+  }
+  const restored = { ...show, section: 'watching', sortOrder, archivedAt: null, availableSeasonNumber: null, expanded: false };
+  state = { ...state, shows: state.shows.map(item => item.id === show.id ? restored : item), view: 'main' };
+  writeCachedSnapshot({ shows: state.shows, cachedAt: new Date().toISOString() });
+  render();
+  showToast(`${show.title} restored.`);
+}
+
 function showToast(message) {
   let toast = document.querySelector('.toast');
   if (!toast) {
@@ -469,6 +577,7 @@ function showToast(message) {
 
 async function boot() {
   document.documentElement.dataset.fontScale = state.preferences.fontScale;
+  document.documentElement.dataset.theme = state.preferences.themeMode ?? 'system';
   if (demoMode) {
     render();
     return;
@@ -545,7 +654,7 @@ async function handleSignOut() {
   repository = null;
   offlineReadOnly = false;
   clearCachedSnapshot();
-  state = { ...state, shows: [], menuOpen: false, sheet: null, editingShowId: null, completion: null, view: 'main' };
+  state = { ...state, shows: [], menuOpen: false, sheet: null, editingShowId: null, showMenuId: null, completion: null, view: 'main' };
   root.innerHTML = renderAuthView();
 }
 

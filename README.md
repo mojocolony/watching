@@ -2,9 +2,9 @@
 
 Watching is a deliberately lightweight personal TV-progress tracker. It keeps two manually ordered lists, **Now Watching** and **Queued Up**, with collapsible episode lists, watched progress, runtimes, a “with Priya” marker/filter, season completion, and Archive.
 
-Version: **0.1.0**
+Version: **0.2.0**
 
-## What v0.1.0 does
+## What v0.2.0 does
 
 - Manually ordered **Now Watching** and **Queued Up** sections
 - Drag shows within a section or between sections
@@ -14,11 +14,14 @@ Version: **0.1.0**
 - TVmaze show/season/episode lookup with manual fallback
 - Automatic TVmaze metadata refresh for tracked shows
 - Detect newly available seasons for archived shows
-- Archive completion timestamp
+- Archive at any point; unfinished shows are labelled **Archived**, completed seasons are labelled **Finished**
+- Resume unfinished archived shows without losing episode progress
 - “With Priya” marker and quick filter
-- IBM Plex Mono UI
-- Minimal hamburger menu: Archive, font size, sign out, version
+- IBM Plex Mono UI with a larger default typography scale
+- Minimal hamburger menu: Archive, font size, System/Light/Dark theme, sign out, version
 - Installable PWA
+- Compact progress line: `Season 1/4 · Episode 5/8`
+- Three-dot show menu for Edit, Priya marker, moving sections, and Archive
 - Multi-device sync through Supabase
 
 ## Backend: shared Ticking Supabase project
@@ -122,10 +125,11 @@ After creating the repository:
 - `src/services/tvmaze.js` — TVmaze adapter
 - `src/services/metadata-refresh.js` — automatic source refresh/merge
 - `src/ui/` — UI rendering and interactions
-- `supabase/migrations/202609030001_watching_schema.sql` — current Watching database schema
+- `supabase/migrations/202609030001_watching_schema.sql` — base Watching database schema
+- `supabase/migrations/202609030002_watching_v020.sql` — v0.2.0 total-season metadata migration
 - `manifest.webmanifest` / `sw.js` — PWA shell
 - `docs/superpowers/specs/2026-09-03-watching-design.md` — approved product design
 
-## Deliberately excluded from v0.1.0
+## Deliberately excluded from v0.2.0
 
 No posters, discovery, ratings, reviews, recommendations, streaming-service tracking, notifications, watch-time statistics, extra lists, or alternative sort modes.

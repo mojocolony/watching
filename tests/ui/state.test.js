@@ -4,7 +4,7 @@ import { reduceState } from '../../src/ui/state.js';
 
 const base = {
   shows: [{ id: 'a', section: 'watching', sortOrder: 0, withPriya: true, expanded: false, episodes: [{ id: 'e1', watched: false }] }],
-  preferences: { fontScale: 'medium', watchingCollapsed: false, queuedCollapsed: false, priyaFilter: false },
+  preferences: { fontScale: 'medium', watchingCollapsed: false, queuedCollapsed: false, priyaFilter: false, themeMode: 'system' },
   menuOpen: false,
   sheet: null,
   view: 'main',
@@ -57,4 +57,16 @@ test('opens and closes edit sheet for a show', () => {
   const closed = reduceState(opened, { type: 'close-sheet' });
   assert.equal(closed.sheet, null);
   assert.equal(closed.editingShowId, null);
+});
+
+test('sets one of the fixed theme modes', () => {
+  assert.equal(reduceState(base, { type: 'set-theme-mode', themeMode: 'dark' }).preferences.themeMode, 'dark');
+  assert.equal(reduceState(base, { type: 'set-theme-mode', themeMode: 'sepia' }).preferences.themeMode, 'system');
+});
+
+test('opens and closes one show actions menu', () => {
+  const open = reduceState(base, { type: 'open-show-menu', showId: 'a' });
+  assert.equal(open.showMenuId, 'a');
+  const closed = reduceState(open, { type: 'close-show-menu' });
+  assert.equal(closed.showMenuId, null);
 });

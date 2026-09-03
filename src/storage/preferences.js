@@ -1,10 +1,12 @@
 const PREFS_KEY = 'watching:preferences:v1';
 const VALID_SCALES = new Set(['small', 'medium', 'large']);
+const VALID_THEMES = new Set(['system', 'light', 'dark']);
 const DEFAULTS = Object.freeze({
   fontScale: 'medium',
   watchingCollapsed: false,
   queuedCollapsed: false,
   priyaFilter: false,
+  themeMode: 'system',
 });
 
 function normalize(value = {}) {
@@ -13,6 +15,7 @@ function normalize(value = {}) {
     watchingCollapsed: value.watchingCollapsed === true,
     queuedCollapsed: value.queuedCollapsed === true,
     priyaFilter: value.priyaFilter === true,
+    themeMode: VALID_THEMES.has(value.themeMode) ? value.themeMode : DEFAULTS.themeMode,
   };
 }
 
