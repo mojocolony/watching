@@ -44,3 +44,35 @@ test('show insert/update mapping carries total season count', () => {
   });
   assert.equal(result.totalSeasons, 4);
 });
+
+test('season episode upserts preserve an existing watched value by omitting watched from conflict updates', async () => {
+  const { toSeasonEpisodeUpsert } = await import('../../src/data/repository.js');
+  const row = toSeasonEpisodeUpsert('season-1', {
+    sourceEpisodeId: 77,
+    episodeNumber: 2,
+    title: 'Two',
+    runtimeMinutes: 51,
+    airdate: '2026-09-03',
+    watched: true,
+  });
+  assert.deepEqual(row, {
+    season_id: 'season-1',
+    source_episode_id: 77,
+    episode_number: 2,
+    title: 'Two',
+    runtime_minutes: 51,
+    airdate: '2026-09-03',
+  });
+  assert.equal('watched' in row, false);
+});
+
+test('season upsert does not clear an existing completion date when switching back to a season', async () => {
+  const { toSeasonUpsert } = await import('../../src/data/repository.js');
+  const row = toSeasonUpsert('show-1', { sourceSeasonId: 101, seasonNumber: 1 });
+  assert.deepEqual(row, {
+    show_id: 'show-1',
+    source_season_id: 101,
+    season_number: 1,
+  });
+  assert.equal('completed_at' in row, false);
+});

@@ -67,7 +67,7 @@ test('menu contains archive font controls sign out and version but no sorting', 
   assert.match(html, /data-theme-mode="system"/);
   assert.match(html, /data-theme-mode="light"/);
   assert.match(html, /data-theme-mode="dark"/);
-  assert.match(html, /v0\.2\.1/);
+  assert.match(html, /v0\.2\.2/);
   assert.doesNotMatch(html, /Alphabetical|Sort/);
 });
 
@@ -116,4 +116,13 @@ test('archive distinguishes unfinished archive from completed season', () => {
   assert.match(html, /Season 6 · Archived/);
   assert.match(html, /Season 1 · Finished/);
   assert.match(html, /data-action="resume-archived" data-show-id="unfinished"/);
+});
+
+test('show actions menu includes permanent deletion below Archive', () => {
+  const html = renderAppMarkup({ ...state, showMenuId: 'slow-horses' });
+  const archiveIndex = html.indexOf('data-action="archive-show"');
+  const deleteIndex = html.indexOf('data-action="delete-show"');
+  assert.ok(archiveIndex >= 0);
+  assert.ok(deleteIndex > archiveIndex);
+  assert.match(html, />Delete Show</);
 });

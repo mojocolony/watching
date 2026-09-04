@@ -81,7 +81,7 @@ function formatArchiveDate(value) {
 function renderEditSheet(state) {
   const show = state.shows.find(item => item.id === state.editingShowId);
   if (!show) return '';
-  return `<div class="sheet-scrim" data-action="close-sheet"></div><section class="sheet" role="dialog" aria-modal="true">${renderEditShowSheet(show)}</section>`;
+  return `<div class="sheet-scrim" data-action="close-sheet"></div><section class="sheet" role="dialog" aria-modal="true">${renderEditShowSheet(show, state.editingSeasons ?? [])}</section>`;
 }
 
 function renderCompletion(state) {

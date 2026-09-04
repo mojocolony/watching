@@ -22,6 +22,9 @@ export function renderEpisodeRow(episode, showId) {
 function showProgress(show) {
   const { watched, total } = getSeasonProgress(show);
   const seasons = show.totalSeasons == null ? '?' : show.totalSeasons;
+  if (total === 0 && show.source !== 'manual') {
+    return `Season ${escapeHtml(show.currentSeason)}/${escapeHtml(seasons)} · Episodes not announced`;
+  }
   return `Season ${escapeHtml(show.currentSeason)}/${escapeHtml(seasons)} · Episode ${escapeHtml(watched)}/${escapeHtml(total)}`;
 }
 
@@ -35,13 +38,18 @@ function renderShowActions(show) {
       <button type="button" role="menuitem" data-action="toggle-show-priya" data-show-id="${escapeHtml(show.id)}">${priyaLabel}</button>
       <button type="button" role="menuitem" data-action="move-show-section" data-show-id="${escapeHtml(show.id)}" data-section="${moveTarget}">${moveLabel}</button>
       <button class="show-actions-danger" type="button" role="menuitem" data-action="archive-show" data-show-id="${escapeHtml(show.id)}">Archive</button>
+      <button class="show-actions-danger" type="button" role="menuitem" data-action="delete-show" data-show-id="${escapeHtml(show.id)}">Delete Show</button>
     </div>`;
 }
 
 export function renderShowRow(show, { menuOpen = false } = {}) {
   const priya = show.withPriya ? `<span class="priya-marker" title="With Priya">${icon('users', { size: 18 })}</span>` : '';
   const expanded = show.expanded === true;
-  const episodes = expanded ? `<ol class="episode-list">${(show.episodes ?? []).map(ep => renderEpisodeRow(ep, show.id)).join('')}</ol>` : '';
+  const episodes = expanded
+    ? ((show.episodes ?? []).length
+      ? `<ol class="episode-list">${(show.episodes ?? []).map(ep => renderEpisodeRow(ep, show.id)).join('')}</ol>`
+      : `<p class="episode-empty">No episode information yet</p>`)
+    : '';
   return `<article class="show-row" data-show-id="${escapeHtml(show.id)}" data-section="${escapeHtml(show.section)}">
     <div class="show-row-main">
       <button class="show-toggle" type="button" data-action="toggle-show" data-show-id="${escapeHtml(show.id)}" aria-expanded="${expanded ? 'true' : 'false'}">

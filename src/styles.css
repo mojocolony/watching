@@ -452,3 +452,5 @@ button:focus-visible, input:focus-visible {
 .show-edit-row { display: flex; justify-content: flex-end; padding: 0 4px 10px; }
 .show-edit-button { min-height: 38px; padding: 0 8px; border: 0; background: transparent; color: var(--muted); font-size: .74em; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
 .edit-show-title { margin: -4px 0 18px; color: var(--text); font-size: .94em; }
+
+.episode-empty { margin: 0; padding: 0.55rem 0 0.9rem; color: var(--muted); font-size: var(--meta-size); }

@@ -38,9 +38,9 @@ export function reduceState(state, action) {
     case 'open-add':
       return { ...state, sheet: 'add', editingShowId: null, menuOpen: false, showMenuId: null };
     case 'open-edit':
-      return { ...state, sheet: 'edit', editingShowId: action.showId, menuOpen: false, showMenuId: null };
+      return { ...state, sheet: 'edit', editingShowId: action.showId, editingSeasons: action.editingSeasons ?? null, menuOpen: false, showMenuId: null };
     case 'close-sheet':
-      return { ...state, sheet: null, editingShowId: null };
+      return { ...state, sheet: null, editingShowId: null, editingSeasons: null };
     case 'open-archive':
       return { ...state, view: 'archive', menuOpen: false, sheet: null, showMenuId: null };
     case 'close-archive':

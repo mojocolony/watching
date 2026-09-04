@@ -55,6 +55,26 @@ export function toMetadataEpisodeUpdate(episode) {
   };
 }
 
+
+export function toSeasonUpsert(showId, season) {
+  return {
+    show_id: showId,
+    source_season_id: season.sourceSeasonId ?? null,
+    season_number: Number(season.seasonNumber),
+  };
+}
+
+export function toSeasonEpisodeUpsert(seasonId, episode) {
+  return {
+    season_id: seasonId,
+    source_episode_id: episode.sourceEpisodeId ?? null,
+    episode_number: Number(episode.episodeNumber),
+    title: episode.title,
+    runtime_minutes: episode.runtimeMinutes ?? null,
+    airdate: episode.airdate ?? null,
+  };
+}
+
 export function toPlacementUpdate(show) {
   return {
     id: show.id,
@@ -173,24 +193,19 @@ export function createRepository(client) {
       }
     },
 
+    async deleteShow(showId) {
+      const { error } = await client.from('watching_shows').delete().eq('id', showId);
+      throwIf(error);
+    },
+
     async addSeason(show, season, episodes, section) {
-      const { data: seasonRow, error } = await client.from('watching_seasons').upsert({
-        show_id: show.id,
-        source_season_id: season.sourceSeasonId ?? null,
-        season_number: Number(season.seasonNumber),
-        completed_at: null,
-      }, { onConflict: 'show_id,season_number' }).select().single();
+      const { data: seasonRow, error } = await client.from('watching_seasons').upsert(
+        toSeasonUpsert(show.id, season),
+        { onConflict: 'show_id,season_number' },
+      ).select().single();
       throwIf(error);
       if (episodes.length) {
-        const rows = episodes.map(ep => ({
-          season_id: seasonRow.id,
-          source_episode_id: ep.sourceEpisodeId ?? null,
-          episode_number: ep.episodeNumber,
-          title: ep.title,
-          runtime_minutes: ep.runtimeMinutes ?? null,
-          airdate: ep.airdate ?? null,
-          watched: false,
-        }));
+        const rows = episodes.map(ep => toSeasonEpisodeUpsert(seasonRow.id, ep));
         const { error: epError } = await client.from('watching_episodes').upsert(rows, { onConflict: 'season_id,episode_number' });
         throwIf(epError);
       }

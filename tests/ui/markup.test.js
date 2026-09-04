@@ -49,3 +49,18 @@ test('show progress marks unknown total seasons without inventing a count', () =
   const html = renderShowRow({ ...show, source: 'manual', totalSeasons: null });
   assert.match(html, /Season 6\/\? · Episode 1\/2/);
 });
+
+test('future season with no episodes says episodes are not announced instead of 0/0', () => {
+  const html = renderShowRow({
+    ...show,
+    id: 'future',
+    title: 'Future Season',
+    currentSeason: 2,
+    totalSeasons: 2,
+    expanded: true,
+    episodes: [],
+  });
+  assert.match(html, /Season 2\/2 · Episodes not announced/);
+  assert.match(html, /No episode information yet/);
+  assert.doesNotMatch(html, /Episode 0\/0/);
+});

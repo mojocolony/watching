@@ -66,3 +66,44 @@ test('renders edit sheet with destination and Priya controls', async () => {
   assert.match(html, /data-field="edit-priya"[^>]*checked/);
   assert.match(html, /data-action="save-edit-show"/);
 });
+
+test('defaults a fetched show to the newest season that actually has episodes', async () => {
+  const { chooseDefaultSeasonWithEpisodes } = await import('../../src/ui/add-show.js');
+  const seasons = [
+    { sourceSeasonId: 101, seasonNumber: 1 },
+    { sourceSeasonId: 202, seasonNumber: 2 },
+  ];
+  const calls = [];
+  const result = await chooseDefaultSeasonWithEpisodes(seasons, async seasonId => {
+    calls.push(seasonId);
+    return seasonId === 202 ? [] : [{ sourceEpisodeId: 1, episodeNumber: 1, title: 'One' }];
+  });
+  assert.equal(result.season.seasonNumber, 1);
+  assert.equal(result.episodes.length, 1);
+  assert.deepEqual(calls, [202, 101]);
+});
+
+test('falls back to the newest announced season when no season has episode information yet', async () => {
+  const { chooseDefaultSeasonWithEpisodes } = await import('../../src/ui/add-show.js');
+  const seasons = [
+    { sourceSeasonId: 101, seasonNumber: 1 },
+    { sourceSeasonId: 202, seasonNumber: 2 },
+  ];
+  const result = await chooseDefaultSeasonWithEpisodes(seasons, async () => []);
+  assert.equal(result.season.seasonNumber, 2);
+  assert.deepEqual(result.episodes, []);
+});
+
+test('edit sheet lets a fetched show choose among known seasons', async () => {
+  const { renderEditShowSheet } = await import('../../src/ui/add-show.js');
+  const html = renderEditShowSheet(
+    { id: 's1', title: 'Eva Longoria: Searching for France', source: 'tvmaze', section: 'watching', withPriya: true, currentSeason: 2 },
+    [
+      { sourceSeasonId: 101, seasonNumber: 1 },
+      { sourceSeasonId: 202, seasonNumber: 2 },
+    ],
+  );
+  assert.match(html, /data-field="edit-season"/);
+  assert.match(html, /value="101"[^>]*>Season 1</);
+  assert.match(html, /value="202" selected[^>]*>Season 2</);
+});

@@ -4,7 +4,7 @@ import { readFile } from 'node:fs/promises';
 
 const css = await readFile(new URL('../src/styles.css', import.meta.url), 'utf8');
 
-test('v0.2.1 uses 20 22 24px primary typography sizes', () => {
+test('v0.2.2 uses 20 22 24px primary typography sizes', () => {
   assert.match(css, /html\[data-font-scale="small"\]\s*\{\s*--font-size:\s*20px/);
   assert.match(css, /html\[data-font-scale="medium"\]\s*\{\s*--font-size:\s*22px/);
   assert.match(css, /html\[data-font-scale="large"\]\s*\{\s*--font-size:\s*24px/);

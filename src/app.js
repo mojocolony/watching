@@ -10,7 +10,7 @@ import { createRepository } from './data/repository.js';
 import { clearCachedSnapshot, readCachedSnapshot, writeCachedSnapshot } from './storage/cache.js';
 import { readPreferences, writePreferences } from './storage/preferences.js';
 import { renderAppMarkup } from './ui/app-shell.js';
-import { buildFetchedShow, buildManualShow, renderFetchedSetup, renderSearchResults } from './ui/add-show.js';
+import { buildFetchedShow, buildManualShow, chooseDefaultSeasonWithEpisodes, renderFetchedSetup, renderSearchResults } from './ui/add-show.js';
 import { attachDragController } from './ui/drag-controller.js';
 import { archiveShowLocally, startNextSeasonLocally } from './ui/completion.js';
 import { reduceState } from './ui/state.js';
@@ -27,6 +27,7 @@ let searchRequest = 0;
 let searchResults = [];
 let selectedSearchResult = null;
 let selectedSeasons = [];
+let selectedSeasonEpisodes = new Map();
 let currentUser = null;
 let repository = null;
 let offlineReadOnly = false;
@@ -40,6 +41,7 @@ let state = {
   view: 'main',
   completion: null,
   editingShowId: null,
+  editingSeasons: null,
   showMenuId: null,
 };
 
@@ -112,8 +114,7 @@ root.addEventListener('click', event => {
       dispatch({ type: 'close-sheet' });
       break;
     case 'edit-show':
-      if (!ensureWritable()) break;
-      dispatch({ type: 'open-edit', showId: target.dataset.showId });
+      openEditShow(target.dataset.showId);
       break;
     case 'save-edit-show':
       saveEditShow();
@@ -138,6 +139,9 @@ root.addEventListener('click', event => {
       break;
     case 'archive-show':
       archiveShowFromMenu(target.dataset.showId);
+      break;
+    case 'delete-show':
+      deleteShowFromMenu(target.dataset.showId);
       break;
     case 'resume-archived':
       resumeArchivedShow(target.dataset.showId);
@@ -327,7 +331,10 @@ async function selectSearchResult(index) {
   try {
     selectedSeasons = await tvmaze.getShowSeasons(selectedSearchResult.sourceShowId);
     if (!selectedSeasons.length) throw new Error('No seasons');
-    sheet.innerHTML = renderFetchedSetup(selectedSearchResult, selectedSeasons);
+    const preferred = await chooseDefaultSeasonWithEpisodes(selectedSeasons, seasonId => tvmaze.getSeasonEpisodes(seasonId));
+    selectedSeasonEpisodes = new Map();
+    if (preferred.season) selectedSeasonEpisodes.set(preferred.season.sourceSeasonId, preferred.episodes);
+    sheet.innerHTML = renderFetchedSetup(selectedSearchResult, selectedSeasons, preferred.season?.sourceSeasonId ?? null);
   } catch {
     sheet.innerHTML = `<div class="sheet-header"><h2>${selectedSearchResult.title}</h2><button class="icon-button" type="button" data-action="close-sheet" aria-label="Close">×</button></div><p class="search-empty">Season information is unavailable. Add this show manually instead.</p><button class="manual-link" type="button" data-action="start-manual-add">Add manually</button>`;
   }
@@ -349,7 +356,9 @@ async function saveFetchedShow() {
   const button = root.querySelector('[data-action="save-fetched-show"]');
   if (button) { button.disabled = true; button.textContent = 'Adding…'; }
   try {
-    const episodes = await tvmaze.getSeasonEpisodes(season.sourceSeasonId);
+    const episodes = selectedSeasonEpisodes.has(season.sourceSeasonId)
+      ? selectedSeasonEpisodes.get(season.sourceSeasonId)
+      : await tvmaze.getSeasonEpisodes(season.sourceSeasonId);
     const sortOrder = nextSortOrder(section);
     const id = globalThis.crypto?.randomUUID?.() ?? `show-${Date.now()}`;
     const totalSeasons = selectedSeasons.length ? Math.max(...selectedSeasons.map(item => Number(item.seasonNumber))) : null;
@@ -450,6 +459,22 @@ async function saveManualShow() {
   }
 }
 
+async function openEditShow(showId) {
+  if (!ensureWritable()) return;
+  const show = state.shows.find(item => item.id === showId);
+  if (!show) return;
+  dispatch({ type: 'open-edit', showId, editingSeasons: show.seasons ?? [] });
+  if (show.source !== 'tvmaze' || !show.sourceShowId) return;
+  try {
+    const seasons = await tvmaze.getShowSeasons(show.sourceShowId);
+    if (state.sheet !== 'edit' || state.editingShowId !== showId) return;
+    state = { ...state, editingSeasons: seasons };
+    render();
+  } catch {
+    // Keep the already-known season choices if TVmaze is temporarily unavailable.
+  }
+}
+
 async function saveEditShow() {
   if (!ensureWritable()) return;
   const show = state.shows.find(item => item.id === state.editingShowId);
@@ -460,26 +485,71 @@ async function saveEditShow() {
     ? (root.querySelector('[data-field="edit-title"]')?.value.trim() || show.title)
     : show.title;
 
+  const availableSeasons = state.editingSeasons ?? show.seasons ?? [];
+  const selectedSeasonId = Number(root.querySelector('[data-field="edit-season"]')?.value);
+  const selectedSeason = show.source === 'tvmaze'
+    ? availableSeasons.find(item => Number(item.sourceSeasonId) === selectedSeasonId) ?? null
+    : null;
+  const seasonChanged = Boolean(selectedSeason && Number(selectedSeason.seasonNumber) !== Number(show.currentSeason));
+  let selectedEpisodes = null;
+
   let nextShows = state.shows;
   if (section !== show.section) {
     const targetIndex = state.shows.filter(item => item.section === section && item.id !== show.id).length;
     nextShows = moveShow(nextShows, show.id, section, targetIndex);
   }
-  nextShows = nextShows.map(item => item.id === show.id ? { ...item, title, withPriya } : item);
 
   try {
+    if (seasonChanged) {
+      selectedEpisodes = await tvmaze.getSeasonEpisodes(selectedSeason.sourceSeasonId);
+    }
     if (repository) {
+      if (seasonChanged) {
+        await repository.addSeason(show, selectedSeason, selectedEpisodes, section);
+      }
       if (section !== show.section) {
         await repository.saveShowPlacement(nextShows.filter(item => item.section !== 'archived'));
       }
       await repository.updateShow(show.id, { title, withPriya });
+      if (seasonChanged) {
+        nextShows = await repository.loadShows(currentUser.id);
+      } else {
+        nextShows = nextShows.map(item => item.id === show.id ? { ...item, title, withPriya } : item);
+      }
+    } else {
+      nextShows = nextShows.map(item => {
+        if (item.id !== show.id) return item;
+        const base = { ...item, title, withPriya };
+        if (!seasonChanged) return base;
+        const seasonSummary = {
+          id: null,
+          sourceSeasonId: selectedSeason.sourceSeasonId,
+          seasonNumber: selectedSeason.seasonNumber,
+          completedAt: null,
+        };
+        return {
+          ...base,
+          currentSeason: selectedSeason.seasonNumber,
+          seasons: [...(base.seasons ?? []).filter(s => Number(s.seasonNumber) !== Number(selectedSeason.seasonNumber)), seasonSummary]
+            .sort((a, b) => Number(a.seasonNumber) - Number(b.seasonNumber)),
+          episodes: (selectedEpisodes ?? []).map(ep => ({
+            id: `${show.id}-source-${ep.sourceEpisodeId}`,
+            sourceEpisodeId: ep.sourceEpisodeId,
+            episodeNumber: ep.episodeNumber,
+            title: ep.title,
+            runtimeMinutes: ep.runtimeMinutes ?? null,
+            airdate: ep.airdate ?? null,
+            watched: false,
+          })),
+        };
+      });
     }
   } catch {
-    showToast('Could not save those changes.');
+    showToast(seasonChanged ? 'Could not load that season.' : 'Could not save those changes.');
     return;
   }
 
-  state = { ...state, shows: nextShows, sheet: null, editingShowId: null };
+  state = { ...state, shows: nextShows, sheet: null, editingShowId: null, editingSeasons: null };
   writeCachedSnapshot({ shows: state.shows, cachedAt: new Date().toISOString() });
   render();
   showToast('Show updated.');
@@ -542,6 +612,24 @@ async function archiveShowFromMenu(showId) {
   writeCachedSnapshot({ shows: state.shows, cachedAt: archivedAt });
   render();
   showToast(`${show.title} archived.`);
+}
+
+async function deleteShowFromMenu(showId) {
+  if (!ensureWritable()) return;
+  const show = state.shows.find(item => item.id === showId);
+  if (!show) return;
+  const confirmed = globalThis.confirm?.(`Delete “${show.title}”? This can’t be undone.`) ?? false;
+  if (!confirmed) return;
+  try {
+    if (repository) await repository.deleteShow(show.id);
+  } catch {
+    showToast('Could not delete that show.');
+    return;
+  }
+  state = { ...state, shows: state.shows.filter(item => item.id !== show.id), showMenuId: null };
+  writeCachedSnapshot({ shows: state.shows, cachedAt: new Date().toISOString() });
+  render();
+  showToast(`${show.title} deleted.`);
 }
 
 async function resumeArchivedShow(showId) {
@@ -654,7 +742,7 @@ async function handleSignOut() {
   repository = null;
   offlineReadOnly = false;
   clearCachedSnapshot();
-  state = { ...state, shows: [], menuOpen: false, sheet: null, editingShowId: null, showMenuId: null, completion: null, view: 'main' };
+  state = { ...state, shows: [], menuOpen: false, sheet: null, editingShowId: null, editingSeasons: null, showMenuId: null, completion: null, view: 'main' };
   root.innerHTML = renderAuthView();
 }
 

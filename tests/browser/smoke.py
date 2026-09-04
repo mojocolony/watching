@@ -28,5 +28,5 @@ with sync_playwright() as p:
     page.locator('[data-action="open-menu"]').click()
     page.wait_for_selector('.menu-panel')
     assert page.get_by_text('Archive', exact=True).count() == 1
-    assert page.get_by_text('v0.2.1').count() == 1
+    assert page.get_by_text('v0.2.2').count() == 1
     browser.close()

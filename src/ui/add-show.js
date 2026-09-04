@@ -11,11 +11,11 @@ export function renderSearchResults(results) {
   }).join('');
 }
 
-export function renderFetchedSetup(result, seasons) {
+export function renderFetchedSetup(result, seasons, selectedSeasonId = null) {
   const options = (seasons ?? [])
     .slice()
     .sort((a, b) => b.seasonNumber - a.seasonNumber)
-    .map(season => `<option value="${escapeHtml(season.sourceSeasonId)}">Season ${escapeHtml(season.seasonNumber)}</option>`)
+    .map(season => `<option value="${escapeHtml(season.sourceSeasonId)}"${Number(season.sourceSeasonId) === Number(selectedSeasonId) ? ' selected' : ''}>Season ${escapeHtml(season.seasonNumber)}</option>`)
     .join('');
 
   return `<div class="sheet-header">
@@ -34,6 +34,17 @@ export function renderFetchedSetup(result, seasons) {
     </fieldset>
     <label class="check-row"><input type="checkbox" data-field="fetched-priya"> <span>With Priya</span></label>
     <button class="primary-button" type="button" data-action="save-fetched-show">Add show</button>`;
+}
+
+
+export async function chooseDefaultSeasonWithEpisodes(seasons, getSeasonEpisodes) {
+  const ordered = (seasons ?? []).slice().sort((a, b) => Number(b.seasonNumber) - Number(a.seasonNumber));
+  if (!ordered.length) return { season: null, episodes: [] };
+  for (const season of ordered) {
+    const episodes = await getSeasonEpisodes(season.sourceSeasonId);
+    if (episodes?.length) return { season, episodes };
+  }
+  return { season: ordered[0], episodes: [] };
 }
 
 export function buildFetchedShow({ result, season, episodes, section, withPriya, sortOrder, id, totalSeasons = null }) {
@@ -105,18 +116,29 @@ export function buildManualShow({ id, title, seasonNumber, episodeCount, section
 }
 
 
-export function renderEditShowSheet(show) {
+export function renderEditShowSheet(show, availableSeasons = []) {
   const watchingChecked = show.section === 'watching' ? ' checked' : '';
   const queuedChecked = show.section === 'queued' ? ' checked' : '';
   const priyaChecked = show.withPriya ? ' checked' : '';
   const titleControl = show.source === 'manual'
     ? `<label class="field-label" for="edit-title">Title</label><input id="edit-title" class="text-field" data-field="edit-title" value="${escapeHtml(show.title)}" autocomplete="off">`
     : `<div class="edit-show-title">${escapeHtml(show.title)}</div>`;
+  const seasonOptions = show.source === 'tvmaze'
+    ? (availableSeasons.length ? availableSeasons : (show.seasons ?? []))
+      .slice()
+      .sort((a, b) => Number(a.seasonNumber) - Number(b.seasonNumber))
+      .map(season => `<option value="${escapeHtml(season.sourceSeasonId)}"${Number(season.seasonNumber) === Number(show.currentSeason) ? ' selected' : ''}>Season ${escapeHtml(season.seasonNumber)}</option>`)
+      .join('')
+    : '';
+  const seasonControl = seasonOptions
+    ? `<label class="field-label" for="edit-season">Season</label><select id="edit-season" class="text-field" data-field="edit-season">${seasonOptions}</select>`
+    : '';
   return `<div class="sheet-header">
       <div><div class="sheet-kicker">Edit show</div><h2>${escapeHtml(show.title)}</h2></div>
       <button class="icon-button" type="button" data-action="close-sheet" aria-label="Close">×</button>
     </div>
     ${titleControl}
+    ${seasonControl}
     <fieldset class="choice-group">
       <legend>Put it in</legend>
       <label><input type="radio" name="edit-section" value="watching"${watchingChecked}> Now Watching</label>
