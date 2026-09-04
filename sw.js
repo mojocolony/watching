@@ -1,4 +1,4 @@
-const CACHE = 'watching-shell-v4';
+const CACHE = 'watching-shell-v5';
 const SHELL = [
   './',
   './index.html',
@@ -25,9 +25,9 @@ const SHELL = [
   './src/ui/icons.js',
   './src/ui/markup.js',
   './src/ui/state.js',
-  './icons/icon-192.png',
-  './icons/icon-512.png',
-  './icons/maskable-512.png'
+  './icons/icon-192.png?v=2',
+  './icons/icon-512.png?v=2',
+  './icons/maskable-512.png?v=2'
 ];
 
 self.addEventListener('install', event => {
@@ -37,18 +37,42 @@ self.addEventListener('install', event => {
 
 self.addEventListener('activate', event => {
   event.waitUntil(
-    caches.keys().then(keys => Promise.all(keys.filter(key => key !== CACHE).map(key => caches.delete(key))))
+    caches.keys().then(keys =>
+      Promise.all(keys.filter(key => key !== CACHE).map(key => caches.delete(key)))
+    )
   );
   self.clients.claim();
 });
 
+function isAppMetadataRequest(url) {
+  return url.pathname.endsWith('/manifest.webmanifest') || url.pathname.includes('/icons/');
+}
+
+function networkFirstWithCache(request) {
+  return fetch(request)
+    .then(response => {
+      if (response.ok) {
+        const clone = response.clone();
+        caches.open(CACHE).then(cache => cache.put(request, clone));
+      }
+      return response;
+    })
+    .catch(() => caches.match(request));
+}
+
 self.addEventListener('fetch', event => {
   const request = event.request;
   if (request.method !== 'GET') return;
+
   const url = new URL(request.url);
 
   if (url.origin !== self.location.origin) {
     event.respondWith(fetch(request));
+    return;
+  }
+
+  if (isAppMetadataRequest(url)) {
+    event.respondWith(networkFirstWithCache(request));
     return;
   }
 
@@ -66,12 +90,14 @@ self.addEventListener('fetch', event => {
   }
 
   event.respondWith(
-    caches.match(request).then(cached => cached || fetch(request).then(response => {
-      if (response.ok) {
-        const clone = response.clone();
-        caches.open(CACHE).then(cache => cache.put(request, clone));
-      }
-      return response;
-    }))
+    caches.match(request).then(cached =>
+      cached || fetch(request).then(response => {
+        if (response.ok) {
+          const clone = response.clone();
+          caches.open(CACHE).then(cache => cache.put(request, clone));
+        }
+        return response;
+      })
+    )
   );
 });
