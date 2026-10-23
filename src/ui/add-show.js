@@ -31,6 +31,7 @@ export function renderFetchedSetup(result, seasons, selectedSeasonId = null) {
       <legend>Put it in</legend>
       <label><input type="radio" name="fetched-section" value="watching" checked> Now Watching</label>
       <label><input type="radio" name="fetched-section" value="queued"> Queued Up</label>
+      <label><input type="radio" name="fetched-section" value="someday"> Someday</label>
     </fieldset>
     <label class="check-row"><input type="checkbox" data-field="fetched-priya"> <span>With Priya</span></label>
     <button class="primary-button" type="button" data-action="save-fetched-show">Add show</button>`;
@@ -61,6 +62,7 @@ export function buildFetchedShow({ result, season, episodes, section, withPriya,
     totalSeasons: totalSeasons == null ? null : Number(totalSeasons),
     expanded: false,
     archivedAt: null,
+    setAsideAt: null,
     availableSeasonNumber: null,
     seasons: [{
       id: null,
@@ -75,6 +77,7 @@ export function buildFetchedShow({ result, season, episodes, section, withPriya,
       title: ep.title,
       runtimeMinutes: ep.runtimeMinutes ?? null,
       airdate: ep.airdate ?? null,
+      summary: ep.summary ?? null,
       watched: false,
     })),
   };
@@ -100,6 +103,7 @@ export function buildManualShow({ id, title, seasonNumber, episodeCount, section
     totalSeasons: null,
     expanded: false,
     archivedAt: null,
+    setAsideAt: null,
     availableSeasonNumber: null,
     season,
     seasons: [season],
@@ -110,6 +114,7 @@ export function buildManualShow({ id, title, seasonNumber, episodeCount, section
       title: `Episode ${index + 1}`,
       runtimeMinutes: null,
       airdate: null,
+      summary: null,
       watched: false,
     })),
   };
@@ -119,6 +124,7 @@ export function buildManualShow({ id, title, seasonNumber, episodeCount, section
 export function renderEditShowSheet(show, availableSeasons = []) {
   const watchingChecked = show.section === 'watching' ? ' checked' : '';
   const queuedChecked = show.section === 'queued' ? ' checked' : '';
+  const somedayChecked = show.section === 'someday' ? ' checked' : '';
   const priyaChecked = show.withPriya ? ' checked' : '';
   const titleControl = show.source === 'manual'
     ? `<label class="field-label" for="edit-title">Title</label><input id="edit-title" class="text-field" data-field="edit-title" value="${escapeHtml(show.title)}" autocomplete="off">`
@@ -143,6 +149,7 @@ export function renderEditShowSheet(show, availableSeasons = []) {
       <legend>Put it in</legend>
       <label><input type="radio" name="edit-section" value="watching"${watchingChecked}> Now Watching</label>
       <label><input type="radio" name="edit-section" value="queued"${queuedChecked}> Queued Up</label>
+      <label><input type="radio" name="edit-section" value="someday"${somedayChecked}> Someday</label>
     </fieldset>
     <label class="check-row"><input type="checkbox" data-field="edit-priya"${priyaChecked}> <span>With Priya</span></label>
     <button class="primary-button" type="button" data-action="save-edit-show">Save changes</button>`;
