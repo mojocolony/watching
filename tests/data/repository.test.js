@@ -10,7 +10,7 @@ test('maps nested database show to UI shape ordered by episode number', () => {
     watching_seasons: [{
       id: 'season', source_season_id: 50, season_number: 3, completed_at: null,
       watching_episodes: [
-        { id: 'e2', source_episode_id: 202, episode_number: 2, title: 'Two', runtime_minutes: 51, airdate: null, watched: false },
+        { id: 'e2', source_episode_id: 202, episode_number: 2, title: 'Two', runtime_minutes: 51, airdate: null, summary: 'A synopsis', watched: false },
         { id: 'e1', source_episode_id: 201, episode_number: 1, title: 'One', runtime_minutes: 48, airdate: '2026-09-01', watched: true },
       ],
     }],
@@ -24,7 +24,7 @@ test('maps nested database show to UI shape ordered by episode number', () => {
 
 test('metadata episode updates never include watched', () => {
   const payload = toMetadataEpisodeUpdate({ title: 'Real title', runtimeMinutes: 52, airdate: '2026-09-10', summary: 'A synopsis', watched: false });
-  assert.deepEqual(payload, { title: 'Real title', runtime_minutes: 52, airdate: '2026-09-10', summary: null, updated_at: payload.updated_at });
+  assert.deepEqual(payload, { title: 'Real title', runtime_minutes: 52, airdate: '2026-09-10', summary: 'A synopsis', updated_at: payload.updated_at });
   assert.equal('watched' in payload, false);
 });
 
