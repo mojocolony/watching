@@ -1,27 +1,29 @@
 # Watching
 
-Watching is a deliberately lightweight personal TV-progress tracker. It keeps two manually ordered lists, **Now Watching** and **Queued Up**, with collapsible episode lists, watched progress, runtimes, a “with Priya” marker/filter, season completion, and Archive.
+Watching is a deliberately lightweight personal TV-progress tracker. It keeps three manually ordered lists, **Now Watching**, **Queued Up**, and **Someday**, with collapsible episode lists, watched progress, runtimes, a “with Priya” marker/filter, season completion, and Archive.
 
-Version: **0.2.1**
+Version: **0.3.0**
 
-## What v0.2.1 does
+## What v0.3.0 does
 
-- Manually ordered **Now Watching** and **Queued Up** sections
+- Manually ordered **Now Watching**, **Queued Up**, and **Someday** sections
 - Drag shows within a section or between sections
 - Collapse either section and individual shows
-- Episode number, title, and runtime
+- Episode number, title, runtime, and expandable full available TVmaze synopsis
 - Tap an episode to toggle watched state; watched episodes simply dim
 - TVmaze show/season/episode lookup with manual fallback
 - Automatic TVmaze metadata refresh for tracked shows
 - Detect newly available seasons for archived shows
+- **Set Aside** in the hamburger menu, above Archive, for paused shows without marking seasons complete
+- Resume a set-aside show with its watched episodes and season progress intact
 - Archive at any point; unfinished shows are labelled **Archived**, completed seasons are labelled **Finished**
 - Resume unfinished archived shows without losing episode progress
 - “With Priya” marker and quick filter
 - IBM Plex Mono UI with a larger default typography scale
-- Minimal hamburger menu: Archive, font size, System/Light/Dark theme, sign out, version
+- Minimal hamburger menu: Set Aside, Archive, font size, System/Light/Dark theme, sign out, version
 - Installable PWA
 - Compact progress line: `Season 1/4 · Episode 5/8`
-- Three-dot show menu for Edit, Priya marker, moving sections, and Archive
+- Three-dot show menu for Edit, Priya marker, moving between all three lists, Set Aside, and Archive
 - Multi-device sync through Supabase
 
 ## Backend: shared Ticking Supabase project
@@ -70,6 +72,7 @@ TV metadata comes from the TVmaze API. User state remains canonical in Supabase.
 A metadata refresh may update or add:
 
 - episode titles
+- full available episode synopses
 - runtimes
 - air dates
 - newly announced episodes
@@ -79,7 +82,7 @@ It never deliberately changes:
 
 - watched/unwatched state
 - manual show order
-- Now Watching / Queued Up placement
+- Now Watching / Queued Up / Someday / Set Aside placement
 - With Priya state
 
 ## Run locally
@@ -127,9 +130,10 @@ After creating the repository:
 - `src/ui/` — UI rendering and interactions
 - `supabase/migrations/202609030001_watching_schema.sql` — base Watching database schema
 - `supabase/migrations/202609030002_watching_v020.sql` — v0.2.0 total-season metadata migration
+- `supabase/migrations/202610220001_watching_v030.sql` — v0.3.0 new sections, pause date and synopsis migration
 - `manifest.webmanifest` / `sw.js` — PWA shell
 - `docs/superpowers/specs/2026-09-03-watching-design.md` — approved product design
 
-## Deliberately excluded from v0.2.0
+## Deliberately excluded from v0.3.0
 
-No posters, discovery, ratings, reviews, recommendations, streaming-service tracking, notifications, watch-time statistics, extra lists, or alternative sort modes.
+No posters, discovery, ratings, reviews, recommendations, streaming-service tracking, notifications, watch-time statistics, or alternative sort modes.
