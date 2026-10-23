@@ -33,7 +33,7 @@ test('search skips fewer than two trimmed characters', async () => {
 test('season episode normalization strips markup and keeps null runtime', async () => {
   const client = createTVMazeClient(async url => {
     assert.match(url, /seasons\/55\/episodes$/);
-    return response([{ id: 8, number: 1, name: '<b>Pilot</b>', runtime: null, airdate: '2026-09-10' }]);
+    return response([{ id: 8, number: 1, name: '<b>Pilot</b>', runtime: null, airdate: '2026-09-10', summary: '<p>A long <b>episode</b> description.</p>' }]);
   });
   assert.deepEqual(await client.getSeasonEpisodes(55), [{
     sourceEpisodeId: 8,
@@ -41,6 +41,7 @@ test('season episode normalization strips markup and keeps null runtime', async 
     title: 'Pilot',
     runtimeMinutes: null,
     airdate: '2026-09-10',
+    summary: 'A long episode description.',
   }]);
 });
 
