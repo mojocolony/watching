@@ -78,3 +78,9 @@ test('Someday offers the same collapsible ordered list as other active sections'
   assert.match(html, /SOMEDAY/);
   assert.match(html, /data-drop-section="someday"/);
 });
+
+test('an empty Someday section supplies a visible drop zone during a drag', () => {
+  const html = renderSection('someday', [], { somedayCollapsed: false });
+  assert.match(html, /class="show-list show-list--empty"/);
+  assert.match(html, /data-drop-section="someday"/);
+});

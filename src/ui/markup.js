@@ -74,7 +74,7 @@ export function renderSection(section, shows, preferences, showMenuId = null) {
   const isWatching = section === 'watching';
   const label = isWatching ? 'NOW WATCHING' : section === 'queued' ? 'QUEUED UP' : 'SOMEDAY';
   const collapsed = isWatching ? preferences.watchingCollapsed : section === 'queued' ? preferences.queuedCollapsed : preferences.somedayCollapsed;
-  const contents = collapsed ? '' : `<div class="show-list" data-drop-section="${section}">${shows.map(show => renderShowRow(show, { menuOpen: show.id === showMenuId })).join('')}</div>`;
+  const contents = collapsed ? '' : `<div class="show-list${shows.length ? '' : ' show-list--empty'}" data-drop-section="${section}">${shows.map(show => renderShowRow(show, { menuOpen: show.id === showMenuId })).join('')}</div>`;
   return `<section class="watch-section" data-section="${section}">
     <button class="section-heading" type="button" data-action="toggle-section" data-section="${section}" aria-expanded="${collapsed ? 'false' : 'true'}">
       <span>${label}</span>${icon(collapsed ? 'chevron-down' : 'chevron-up', { size: 17 })}

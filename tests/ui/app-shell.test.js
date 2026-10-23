@@ -67,7 +67,7 @@ test('menu contains archive font controls sign out and version but no sorting', 
   assert.match(html, /data-theme-mode="system"/);
   assert.match(html, /data-theme-mode="light"/);
   assert.match(html, /data-theme-mode="dark"/);
-  assert.match(html, /v0\.3\.0/);
+  assert.match(html, /v0\.3\.1/);
   assert.doesNotMatch(html, /Alphabetical|Sort/);
 });
 
