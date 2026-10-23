@@ -747,8 +747,7 @@ async function syncCloudShows({ notify = false } = {}) {
       const shows = await activeRepository.loadShows(userId);
       if (activeRepository !== repository || currentUser?.id !== userId) return false;
       // Keep expanded rows open without preserving stale show data.
-      const expandedById = new Map(state.shows.map(show => [show.id, show.expanded]));
-      const freshShows = shows.map(show => ({ ...show, expanded: expandedById.get(show.id) === true }));
+      const freshShows = reconcileCloudShows(state.shows, shows);
       offlineReadOnly = false;
       state = { ...state, shows: freshShows, syncError: false };
       writeCachedSnapshot({ shows: freshShows, cachedAt: new Date().toISOString() });
