@@ -9,6 +9,7 @@ function renderMenu(state) {
   const scale = state.preferences.fontScale;
   return `<div class="menu-scrim" data-action="close-menu"></div>
     <aside class="menu-panel" aria-label="Menu">
+      <button class="menu-item" type="button" data-action="open-set-aside">Set Aside</button>
       <button class="menu-item" type="button" data-action="open-archive">Archive</button>
       <div class="menu-control-row" aria-label="Font size">
         <span class="menu-label">Font size</span>
@@ -43,6 +44,29 @@ function renderAddSheet() {
       <div class="search-results" data-region="search-results" aria-live="polite"></div>
       <button class="manual-link" type="button" data-action="start-manual-add">Add manually</button>
     </section>`;
+}
+
+function renderSetAside(state) {
+  const paused = state.shows.filter(show => show.section === 'set_aside');
+  return `<main class="archive-view">
+    <div class="archive-header">
+      <button class="icon-button" type="button" data-action="close-set-aside" aria-label="Back">${icon('arrow-left', { size: 20 })}</button>
+      <h1>Set Aside</h1>
+    </div>
+    <div class="archive-list">
+      ${paused.length ? paused.map(show => {
+        const watched = (show.episodes ?? []).filter(episode => episode.watched).length;
+        const total = (show.episodes ?? []).length;
+        return `<article class="archive-row">
+          <div><strong>${escapeHtml(show.title)}</strong><div class="archive-meta">Season ${escapeHtml(show.currentSeason)} · ${watched}/${total} watched${show.setAsideAt ? ` · Set aside ${escapeHtml(formatArchiveDate(show.setAsideAt))}` : ''}</div></div>
+          <div class="archive-actions">
+            <button class="season-available" type="button" data-action="resume-set-aside" data-show-id="${escapeHtml(show.id)}">Resume</button>
+            <button class="season-available" type="button" data-action="archive-show" data-show-id="${escapeHtml(show.id)}">Archive</button>
+          </div>
+        </article>`;
+      }).join('') : '<p class="empty-state">Nothing set aside yet.</p>'}
+    </div>
+  </main>`;
 }
 
 function renderArchive(state) {
@@ -93,18 +117,22 @@ function renderCompletion(state) {
 
 export function renderAppMarkup(state) {
   const filteredShows = state.preferences.priyaFilter
-    ? state.shows.filter(show => show.withPriya || show.section === 'archived')
+    ? state.shows.filter(show => show.withPriya || show.section === 'archived' || show.section === 'set_aside')
     : state.shows;
 
   const watching = filteredShows.filter(show => show.section === 'watching').sort((a, b) => a.sortOrder - b.sortOrder);
   const queued = filteredShows.filter(show => show.section === 'queued').sort((a, b) => a.sortOrder - b.sortOrder);
+  const someday = filteredShows.filter(show => show.section === 'someday').sort((a, b) => a.sortOrder - b.sortOrder);
   const priyaActive = state.preferences.priyaFilter;
 
   const main = state.view === 'archive'
     ? renderArchive(state)
+    : state.view === 'set_aside'
+    ? renderSetAside(state)
     : `<main class="main-view">
         ${renderSection('watching', watching, state.preferences, state.showMenuId ?? null)}
         ${renderSection('queued', queued, state.preferences, state.showMenuId ?? null)}
+        ${renderSection('someday', someday, state.preferences, state.showMenuId ?? null)}
       </main>`;
 
   return `<div class="watching-app" data-font-scale="${escapeHtml(state.preferences.fontScale)}" data-theme-mode="${escapeHtml(state.preferences.themeMode ?? 'system')}">
