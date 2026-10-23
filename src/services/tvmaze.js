@@ -10,7 +10,11 @@ export class TVMazeError extends Error {
 
 function textOnly(value, fallback = '') {
   if (value == null) return fallback;
-  return String(value).replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim() || fallback;
+  return String(value)
+    .replace(/<\s*(?:br\s*\/?|\/\s*(?:p|div|li|h[1-6]))\s*>/gi, ' ')
+    .replace(/<[^>]*>/g, '')
+    .replace(/\s+/g, ' ')
+    .trim() || fallback;
 }
 
 async function jsonOrThrow(fetchImpl, url) {
