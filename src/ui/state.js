@@ -16,7 +16,7 @@ export function reduceState(state, action) {
         shows: state.shows.map(show => show.id === action.showId ? toggleEpisodeWatched(show, action.episodeId) : show),
       };
     case 'toggle-section': {
-      const key = action.section === 'watching' ? 'watchingCollapsed' : action.section === 'queued' ? 'queuedCollapsed' : null;
+      const key = action.section === 'watching' ? 'watchingCollapsed' : action.section === 'queued' ? 'queuedCollapsed' : action.section === 'someday' ? 'somedayCollapsed' : null;
       if (!key) return state;
       return { ...state, preferences: { ...state.preferences, [key]: !state.preferences[key] } };
     }
@@ -41,6 +41,10 @@ export function reduceState(state, action) {
       return { ...state, sheet: 'edit', editingShowId: action.showId, editingSeasons: action.editingSeasons ?? null, menuOpen: false, showMenuId: null };
     case 'close-sheet':
       return { ...state, sheet: null, editingShowId: null, editingSeasons: null };
+    case 'open-set-aside':
+      return { ...state, view: 'set_aside', menuOpen: false, sheet: null, showMenuId: null };
+    case 'close-set-aside':
+      return { ...state, view: 'main' };
     case 'open-archive':
       return { ...state, view: 'archive', menuOpen: false, sheet: null, showMenuId: null };
     case 'close-archive':

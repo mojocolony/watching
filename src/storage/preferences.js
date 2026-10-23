@@ -5,6 +5,7 @@ const DEFAULTS = Object.freeze({
   fontScale: 'medium',
   watchingCollapsed: false,
   queuedCollapsed: false,
+  somedayCollapsed: false,
   priyaFilter: false,
   themeMode: 'system',
 });
@@ -14,6 +15,7 @@ function normalize(value = {}) {
     fontScale: VALID_SCALES.has(value.fontScale) ? value.fontScale : DEFAULTS.fontScale,
     watchingCollapsed: value.watchingCollapsed === true,
     queuedCollapsed: value.queuedCollapsed === true,
+    somedayCollapsed: value.somedayCollapsed === true,
     priyaFilter: value.priyaFilter === true,
     themeMode: VALID_THEMES.has(value.themeMode) ? value.themeMode : DEFAULTS.themeMode,
   };

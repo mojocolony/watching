@@ -30,6 +30,7 @@ test('preferences use the agreed defaults', () => {
     fontScale: 'medium',
     watchingCollapsed: false,
     queuedCollapsed: false,
+    somedayCollapsed: false,
     priyaFilter: false,
     themeMode: 'system',
   });
@@ -42,6 +43,7 @@ test('preferences reject invalid scale and preserve booleans', () => {
     fontScale: 'medium',
     watchingCollapsed: true,
     queuedCollapsed: true,
+    somedayCollapsed: false,
     priyaFilter: true,
     themeMode: 'system',
   });

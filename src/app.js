@@ -119,6 +119,12 @@ root.addEventListener('click', event => {
     case 'save-edit-show':
       saveEditShow();
       break;
+    case 'open-set-aside':
+      dispatch({ type: 'open-set-aside' });
+      break;
+    case 'close-set-aside':
+      dispatch({ type: 'close-set-aside' });
+      break;
     case 'open-archive':
       dispatch({ type: 'open-archive' });
       break;
@@ -136,6 +142,12 @@ root.addEventListener('click', event => {
       break;
     case 'move-show-section':
       moveShowFromMenu(target.dataset.showId, target.dataset.section);
+      break;
+    case 'set-aside-show':
+      setAsideShow(target.dataset.showId);
+      break;
+    case 'resume-set-aside':
+      resumeSetAsideShow(target.dataset.showId);
       break;
     case 'archive-show':
       archiveShowFromMenu(target.dataset.showId);
@@ -255,7 +267,7 @@ async function startCompletionNextSeason(section) {
   const completion = state.completion;
   const show = state.shows.find(item => item.id === completion?.showId);
   const season = completion?.nextSeason;
-  if (!show || !season || !['watching', 'queued'].includes(section)) return;
+  if (!show || !season || !['watching', 'queued', 'someday'].includes(section)) return;
   try {
     const episodes = await tvmaze.getSeasonEpisodes(season.sourceSeasonId);
     const sortOrder = nextSortOrder(section);
@@ -389,7 +401,7 @@ attachDragController(root, async ({ showId, targetSection, targetIndex }) => {
   render();
   if (repository) {
     try {
-      await repository.saveShowPlacement(nextShows.filter(show => show.section !== 'archived'));
+      await repository.saveShowPlacement(nextShows.filter(show => ['watching', 'queued', 'someday'].includes(show.section)));
     } catch {
       state = { ...state, shows: beforeShows };
       writeCachedSnapshot({ shows: state.shows, cachedAt: new Date().toISOString() });
@@ -406,6 +418,7 @@ root.addEventListener('keydown', event => {
   else if (state.sheet) dispatch({ type: 'close-sheet' });
   else if (state.menuOpen) dispatch({ type: 'close-menu' });
   else if (state.view === 'archive') dispatch({ type: 'close-archive' });
+  else if (state.view === 'set_aside') dispatch({ type: 'close-set-aside' });
 });
 
 function showManualAddForm() {
@@ -426,6 +439,7 @@ function showManualAddForm() {
       <legend>Put it in</legend>
       <label><input type="radio" name="manual-section" value="watching" checked> Now Watching</label>
       <label><input type="radio" name="manual-section" value="queued"> Queued Up</label>
+       <label><input type="radio" name="manual-section" value="someday"> Someday</label>
     </fieldset>
     <label class="check-row"><input type="checkbox" data-field="manual-priya"> <span>With Priya</span></label>
     <button class="primary-button" type="button" data-action="save-manual-show">Add show</button>`;
@@ -508,7 +522,7 @@ async function saveEditShow() {
         await repository.addSeason(show, selectedSeason, selectedEpisodes, section);
       }
       if (section !== show.section) {
-        await repository.saveShowPlacement(nextShows.filter(item => item.section !== 'archived'));
+        await repository.saveShowPlacement(nextShows.filter(item => ['watching', 'queued', 'someday'].includes(item.section)));
       }
       await repository.updateShow(show.id, { title, withPriya });
       if (seasonChanged) {
@@ -539,6 +553,7 @@ async function saveEditShow() {
             title: ep.title,
             runtimeMinutes: ep.runtimeMinutes ?? null,
             airdate: ep.airdate ?? null,
+            summary: ep.summary ?? null,
             watched: false,
           })),
         };
@@ -575,13 +590,13 @@ async function toggleShowPriya(showId) {
 }
 
 async function moveShowFromMenu(showId, section) {
-  if (!ensureWritable() || !['watching', 'queued'].includes(section)) return;
+  if (!ensureWritable() || !['watching', 'queued', 'someday'].includes(section)) return;
   const show = state.shows.find(item => item.id === showId);
   if (!show || show.section === section) return;
   const targetIndex = state.shows.filter(item => item.section === section && item.id !== show.id).length;
   const nextShows = moveShow(state.shows, show.id, section, targetIndex);
   try {
-    if (repository) await repository.saveShowPlacement(nextShows.filter(item => item.section !== 'archived'));
+    if (repository) await repository.saveShowPlacement(nextShows.filter(item => ['watching', 'queued', 'someday'].includes(item.section)));
   } catch {
     showToast('Could not move that show.');
     return;
@@ -589,6 +604,47 @@ async function moveShowFromMenu(showId, section) {
   state = { ...state, shows: nextShows, showMenuId: null };
   writeCachedSnapshot({ shows: state.shows, cachedAt: new Date().toISOString() });
   render();
+}
+
+async function setAsideShow(showId) {
+  if (!ensureWritable()) return;
+  const show = state.shows.find(item => item.id === showId);
+  if (!show || !['watching', 'queued', 'someday'].includes(show.section)) return;
+  const setAsideAt = new Date().toISOString();
+  try {
+    if (repository) await repository.updateShow(show.id, { section: 'set_aside', setAsideAt, archivedAt: null });
+  } catch {
+    showToast('Could not set that show aside.');
+    return;
+  }
+  state = {
+    ...state,
+    shows: state.shows.map(item => item.id === show.id
+      ? { ...item, section: 'set_aside', setAsideAt, archivedAt: null, expanded: false }
+      : item),
+    showMenuId: null,
+  };
+  writeCachedSnapshot({ shows: state.shows, cachedAt: setAsideAt });
+  render();
+  showToast(`${show.title} set aside.`);
+}
+
+async function resumeSetAsideShow(showId) {
+  if (!ensureWritable()) return;
+  const show = state.shows.find(item => item.id === showId);
+  if (!show || show.section !== 'set_aside') return;
+  const sortOrder = nextSortOrder('watching');
+  try {
+    if (repository) await repository.updateShow(show.id, { section: 'watching', sortOrder, setAsideAt: null });
+  } catch {
+    showToast('Could not resume that show.');
+    return;
+  }
+  const resumed = { ...show, section: 'watching', sortOrder, setAsideAt: null, expanded: false };
+  state = { ...state, shows: state.shows.map(item => item.id === show.id ? resumed : item), view: 'main' };
+  writeCachedSnapshot({ shows: state.shows, cachedAt: new Date().toISOString() });
+  render();
+  showToast(`${show.title} resumed.`);
 }
 
 async function archiveShowFromMenu(showId) {
@@ -638,12 +694,12 @@ async function resumeArchivedShow(showId) {
   if (!show || show.section !== 'archived') return;
   const sortOrder = nextSortOrder('watching');
   try {
-    if (repository) await repository.updateShow(show.id, { section: 'watching', sortOrder, archivedAt: null, availableSeasonNumber: null });
+    if (repository) await repository.updateShow(show.id, { section: 'watching', sortOrder, archivedAt: null, setAsideAt: null, availableSeasonNumber: null });
   } catch {
     showToast('Could not restore that show.');
     return;
   }
-  const restored = { ...show, section: 'watching', sortOrder, archivedAt: null, availableSeasonNumber: null, expanded: false };
+  const restored = { ...show, section: 'watching', sortOrder, archivedAt: null, setAsideAt: null, availableSeasonNumber: null, expanded: false };
   state = { ...state, shows: state.shows.map(item => item.id === show.id ? restored : item), view: 'main' };
   writeCachedSnapshot({ shows: state.shows, cachedAt: new Date().toISOString() });
   render();
@@ -749,15 +805,17 @@ async function handleSignOut() {
 async function refreshCloudMetadata() {
   if (!repository || !state.shows.length) return;
   try {
+    const needsSynopsisBackfill = globalThis.localStorage?.getItem(`watching:synopses-v1:${currentUser?.id}`) !== '1';
     const result = await refreshTrackedMetadata({
       shows: state.shows,
-      lastCheckedAt: lastMetadataCheckedAt,
+      lastCheckedAt: needsSynopsisBackfill ? null : lastMetadataCheckedAt,
       tvmaze,
       repository,
       now: new Date(),
     });
     state = { ...state, shows: result.shows };
     lastMetadataCheckedAt = result.checkedAt;
+    if (needsSynopsisBackfill) globalThis.localStorage?.setItem(`watching:synopses-v1:${currentUser?.id}`, '1');
     globalThis.localStorage?.setItem('watching:metadata-checked-at', result.checkedAt);
     writeCachedSnapshot({ shows: state.shows, cachedAt: result.checkedAt });
     render();

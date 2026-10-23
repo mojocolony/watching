@@ -29,3 +29,15 @@ test('normalization leaves archive untouched', () => {
   const next = normalizeSectionOrder(input, 'watching');
   assert.equal(next.find(s => s.id === 'z').sortOrder, 99);
 });
+
+test('Someday participates in dragging while hidden categories remain untouched', () => {
+  const extras = [
+    { id: 'd', section: 'someday', sortOrder: 0 },
+    { id: 'p', section: 'set_aside', sortOrder: 9 },
+    { id: 'z', section: 'archived', sortOrder: 10 },
+  ];
+  const next = moveShow([...base, ...extras], 'a', 'someday', 1);
+  assert.deepEqual(next.filter(item => item.section === 'someday').map(item => item.id), ['d', 'a']);
+  assert.equal(next.find(item => item.id === 'p').sortOrder, 9);
+  assert.equal(next.find(item => item.id === 'z').sortOrder, 10);
+});

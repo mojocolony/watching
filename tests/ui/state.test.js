@@ -70,3 +70,11 @@ test('opens and closes one show actions menu', () => {
   const closed = reduceState(open, { type: 'close-show-menu' });
   assert.equal(closed.showMenuId, null);
 });
+
+test('Someday collapse persists in state and Set Aside has its own view', () => {
+  const collapsed = reduceState(base, { type: 'toggle-section', section: 'someday' });
+  assert.equal(collapsed.preferences.somedayCollapsed, true);
+  const open = reduceState(base, { type: 'open-set-aside' });
+  assert.equal(open.view, 'set_aside');
+  assert.equal(reduceState(open, { type: 'close-set-aside' }).view, 'main');
+});

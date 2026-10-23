@@ -10,7 +10,11 @@ export class TVMazeError extends Error {
 
 function textOnly(value, fallback = '') {
   if (value == null) return fallback;
-  return String(value).replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim() || fallback;
+  return String(value)
+    .replace(/<\s*(?:br\s*\/?|\/\s*(?:p|div|li|h[1-6]))\s*>/gi, ' ')
+    .replace(/<[^>]*>/g, '')
+    .replace(/\s+/g, ' ')
+    .trim() || fallback;
 }
 
 async function jsonOrThrow(fetchImpl, url) {
@@ -35,6 +39,7 @@ function normalizeEpisode(episode) {
     title: textOnly(episode.name, `Episode ${episode.number}`),
     runtimeMinutes: Number.isFinite(Number(episode.runtime)) && Number(episode.runtime) > 0 ? Number(episode.runtime) : null,
     airdate: episode.airdate || null,
+    summary: textOnly(episode.summary, '') || null,
   };
 }
 

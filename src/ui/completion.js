@@ -19,6 +19,7 @@ export function archiveShowLocally(show, archivedAt, { completed = true } = {}) 
     ...show,
     section: 'archived',
     archivedAt,
+    setAsideAt: null,
     availableSeasonNumber: null,
     expanded: false,
     seasons: (show.seasons ?? []).map(season => season.seasonNumber === show.currentSeason
@@ -33,6 +34,7 @@ export function startNextSeasonLocally(show, { season, episodes, section }) {
     section,
     currentSeason: season.seasonNumber,
     archivedAt: null,
+    setAsideAt: null,
     availableSeasonNumber: null,
     expanded: false,
     seasons: [...(show.seasons ?? []).filter(item => item.seasonNumber !== season.seasonNumber), {
@@ -48,6 +50,7 @@ export function startNextSeasonLocally(show, { season, episodes, section }) {
       title: ep.title,
       runtimeMinutes: ep.runtimeMinutes ?? null,
       airdate: ep.airdate ?? null,
+      summary: ep.summary ?? null,
       watched: false,
     })),
   };
