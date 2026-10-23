@@ -118,6 +118,25 @@ button:focus-visible, input:focus-visible {
   cursor: pointer;
 }
 .show-list { display: grid; }
+.dragging-show .show-list--empty {
+  position: relative;
+  min-height: 52px;
+  border: 1px dashed var(--line-dark);
+  border-radius: 8px;
+}
+.dragging-show .show-list--empty::before {
+  content: 'Drop a show here';
+  position: absolute;
+  top: 16px;
+  left: 12px;
+  color: var(--muted);
+  font-size: var(--meta-font-size);
+  pointer-events: none;
+}
+.dragging-show .watch-section--drop-target > .section-heading {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+}
 .show-row { position: relative; min-width: 0; border-bottom: 1px solid var(--line); }
 .show-row-main { display: flex; align-items: center; min-width: 0; }
 .show-toggle {
