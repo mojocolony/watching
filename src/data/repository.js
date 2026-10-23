@@ -14,6 +14,7 @@ export function mapDbEpisode(row) {
     title: row.title,
     runtimeMinutes: row.runtime_minutes == null ? null : Number(row.runtime_minutes),
     airdate: row.airdate ?? null,
+    summary: row.summary ?? null,
     watched: Boolean(row.watched),
   };
 }
@@ -35,6 +36,7 @@ export function mapDbShow(row) {
     totalSeasons: row.total_seasons == null ? null : Number(row.total_seasons),
     availableSeasonNumber: row.available_season_number == null ? null : Number(row.available_season_number),
     archivedAt: row.archived_at ?? null,
+    setAsideAt: row.set_aside_at ?? null,
     expanded: false,
     seasons: seasonRows.map(season => ({
       id: season.id,
@@ -51,6 +53,7 @@ export function toMetadataEpisodeUpdate(episode) {
     title: episode.title,
     runtime_minutes: episode.runtimeMinutes ?? null,
     airdate: episode.airdate ?? null,
+    summary: episode.summary ?? null,
     updated_at: nowIso(),
   };
 }
@@ -72,6 +75,7 @@ export function toSeasonEpisodeUpsert(seasonId, episode) {
     title: episode.title,
     runtime_minutes: episode.runtimeMinutes ?? null,
     airdate: episode.airdate ?? null,
+    summary: episode.summary ?? null,
   };
 }
 
@@ -97,6 +101,7 @@ function showInsertPayload(userId, payload) {
     current_season: Number(payload.currentSeason),
     total_seasons: payload.totalSeasons == null ? null : Number(payload.totalSeasons),
     available_season_number: payload.availableSeasonNumber ?? null,
+    set_aside_at: payload.setAsideAt ?? null,
   };
 }
 
@@ -159,6 +164,7 @@ export function createRepository(client) {
         title: episode.title,
         runtime_minutes: episode.runtimeMinutes ?? null,
         airdate: episode.airdate ?? null,
+    summary: episode.summary ?? null,
         watched: Boolean(episode.watched),
       }));
       if (episodeRows.length) {
@@ -179,13 +185,14 @@ export function createRepository(client) {
       if ('totalSeasons' in patch) dbPatch.total_seasons = patch.totalSeasons == null ? null : Number(patch.totalSeasons);
       if ('availableSeasonNumber' in patch) dbPatch.available_season_number = patch.availableSeasonNumber;
       if ('archivedAt' in patch) dbPatch.archived_at = patch.archivedAt;
+      if ('setAsideAt' in patch) dbPatch.set_aside_at = patch.setAsideAt;
       if ('sourceUpdatedAt' in patch) dbPatch.source_updated_at = patch.sourceUpdatedAt;
       const { error } = await client.from('watching_shows').update(dbPatch).eq('id', showId);
       throwIf(error);
     },
 
     async archiveShow(show, archivedAt, { completed = true } = {}) {
-      await this.updateShow(show.id, { section: 'archived', archivedAt, availableSeasonNumber: null });
+      await this.updateShow(show.id, { section: 'archived', archivedAt, setAsideAt: null, availableSeasonNumber: null });
       const current = (show.seasons ?? []).find(season => season.seasonNumber === show.currentSeason);
       if (completed && current?.id) {
         const { error } = await client.from('watching_seasons').update({ completed_at: archivedAt }).eq('id', current.id);
@@ -247,6 +254,8 @@ export function createRepository(client) {
             title: episode.title,
             runtime_minutes: episode.runtimeMinutes ?? null,
             airdate: episode.airdate ?? null,
+         summary: episode.summary ?? null,
+    summary: episode.summary ?? null,
             watched: false,
           }, { onConflict: 'season_id,episode_number' }).select('id').single();
           throwIf(insertError);
