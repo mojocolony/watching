@@ -11,6 +11,7 @@ function renderMenu(state) {
     <aside class="menu-panel" aria-label="Menu">
       <button class="menu-item" type="button" data-action="open-set-aside">Set Aside</button>
       <button class="menu-item" type="button" data-action="open-archive">Archive</button>
+      <button class="menu-item" type="button" data-action="sync-now">Sync now</button>
       <div class="menu-control-row" aria-label="Font size">
         <span class="menu-label">Font size</span>
         <div class="font-size-controls">
@@ -130,6 +131,7 @@ export function renderAppMarkup(state) {
     : state.view === 'set_aside'
     ? renderSetAside(state)
     : `<main class="main-view">
+        ${priyaActive ? '<div class="filter-notice">With Priya filter is on. <button type="button" data-action="toggle-priya-filter">Show all shows</button></div>' : ''}
         ${renderSection('watching', watching, state.preferences, state.showMenuId ?? null)}
         ${renderSection('queued', queued, state.preferences, state.showMenuId ?? null)}
         ${renderSection('someday', someday, state.preferences, state.showMenuId ?? null)}
@@ -140,6 +142,7 @@ export function renderAppMarkup(state) {
       <div class="brand"><span class="brand-icon">${icon('tv', { size: 21 })}</span><span>Watching</span></div>
       <button class="icon-button menu-button" type="button" data-action="open-menu" aria-label="Open menu">${icon('hamburger', { size: 22 })}</button>
     </header>
+    ${state.syncError ? '<div class="sync-warning" role="alert">Showing a saved copy. Cloud sync is unavailable; changes are disabled. <button type="button" data-action="sync-now">Retry sync</button></div>' : ''}
     ${main}
     ${state.view === 'main' ? `<div class="floating-pill" aria-label="Quick actions">
       <button class="floating-button" type="button" data-action="add-show" aria-label="Add show">${icon('plus', { size: 24 })}</button>
