@@ -19,11 +19,12 @@ test('maps nested database show to UI shape ordered by episode number', () => {
   assert.equal(result.totalSeasons, 5);
   assert.equal(result.episodes[0].id, 'e1');
   assert.equal(result.episodes[0].runtimeMinutes, 48);
+  assert.equal(result.episodes[1].summary, 'A synopsis');
 });
 
 test('metadata episode updates never include watched', () => {
-  const payload = toMetadataEpisodeUpdate({ title: 'Real title', runtimeMinutes: 52, airdate: '2026-09-10', watched: false });
-  assert.deepEqual(payload, { title: 'Real title', runtime_minutes: 52, airdate: '2026-09-10', updated_at: payload.updated_at });
+  const payload = toMetadataEpisodeUpdate({ title: 'Real title', runtimeMinutes: 52, airdate: '2026-09-10', summary: 'A synopsis', watched: false });
+  assert.deepEqual(payload, { title: 'Real title', runtime_minutes: 52, airdate: '2026-09-10', summary: null, updated_at: payload.updated_at });
   assert.equal('watched' in payload, false);
 });
 
@@ -62,6 +63,7 @@ test('season episode upserts preserve an existing watched value by omitting watc
     title: 'Two',
     runtime_minutes: 51,
     airdate: '2026-09-03',
+    summary: null,
   });
   assert.equal('watched' in row, false);
 });
@@ -75,4 +77,15 @@ test('season upsert does not clear an existing completion date when switching ba
     season_number: 1,
   });
   assert.equal('completed_at' in row, false);
+});
+
+test('maps Set Aside timestamp without modifying episode watched state', () => {
+  const show = mapDbShow({
+    id: 's2', title: 'Paused', section: 'set_aside', sort_order: 1,
+    current_season: 1, set_aside_at: '2026-10-22T12:00:00Z',
+    watching_seasons: [{ id: 'season2', season_number: 1, watching_episodes: [{ id: 'e3', episode_number: 1, title: 'Pilot', watched: true, summary: 'Plot' }] }],
+  });
+  assert.equal(show.setAsideAt, '2026-10-22T12:00:00Z');
+  assert.equal(show.episodes[0].watched, true);
+  assert.equal(show.episodes[0].summary, 'Plot');
 });
