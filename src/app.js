@@ -31,6 +31,7 @@ let selectedSeasonEpisodes = new Map();
 let currentUser = null;
 let repository = null;
 let offlineReadOnly = false;
+let cloudSyncPromise = null;
 let lastMetadataCheckedAt = globalThis.localStorage?.getItem('watching:metadata-checked-at') || null;
 
 let state = {
@@ -95,6 +96,12 @@ root.addEventListener('click', event => {
       break;
     case 'open-menu':
       dispatch({ type: 'open-menu' });
+      break;
+    case 'sync-now':
+      dispatch({ type: 'close-menu' });
+      if (demoMode) showToast('Demo mode has no cloud account.');
+      else if (repository) void syncCloudShows({ notify: true });
+      else void boot();
       break;
     case 'close-menu':
       dispatch({ type: 'close-menu' });
@@ -727,6 +734,45 @@ function showToast(message) {
   showToast.timer = setTimeout(() => toast.classList.remove('toast--visible'), 2200);
 }
 
+// The cloud is authoritative. Cache is only a read-only fallback, never proof
+// that the list is current. Re-fetch whenever the installed PWA becomes visible.
+async function syncCloudShows({ notify = false } = {}) {
+  if (!repository || !currentUser) return false;
+  if (cloudSyncPromise) return cloudSyncPromise;
+  const activeRepository = repository;
+  const userId = currentUser.id;
+  const work = (async () => {
+    try {
+      const shows = await activeRepository.loadShows(userId);
+      if (activeRepository !== repository || currentUser?.id !== userId) return false;
+      // Keep expanded rows open without preserving stale show data.
+      const expandedById = new Map(state.shows.map(show => [show.id, show.expanded]));
+      const freshShows = shows.map(show => ({ ...show, expanded: expandedById.get(show.id) === true }));
+      offlineReadOnly = false;
+      state = { ...state, shows: freshShows, syncError: false };
+      writeCachedSnapshot({ shows: freshShows, cachedAt: new Date().toISOString() });
+      render();
+      if (notify) {
+        showToast(`Synced ${shows.length} shows.${state.preferences.priyaFilter ? ' With Priya filter is on.' : ''}`);
+      }
+      return true;
+    } catch {
+      if (activeRepository !== repository || currentUser?.id !== userId) return false;
+      offlineReadOnly = true;
+      state = { ...state, syncError: true };
+      render();
+      if (notify) showToast('Could not reach the cloud. Try again.');
+      return false;
+    }
+  })();
+  cloudSyncPromise = work;
+  try {
+    return await work;
+  } finally {
+    if (cloudSyncPromise === work) cloudSyncPromise = null;
+  }
+}
+
 async function boot() {
   document.documentElement.dataset.fontScale = state.preferences.fontScale;
   document.documentElement.dataset.theme = state.preferences.themeMode ?? 'system';
@@ -738,9 +784,8 @@ async function boot() {
   const cached = readCachedSnapshot();
   if (navigator.onLine === false && cached?.shows) {
     offlineReadOnly = true;
-    state = { ...state, shows: cached.shows };
+    state = { ...state, shows: cached.shows, syncError: true };
     render();
-    queueMicrotask(() => showToast('Offline — showing last synced data.'));
     return;
   }
   try {
@@ -756,29 +801,18 @@ async function boot() {
 }
 
 async function loadCloudUser(user) {
-  offlineReadOnly = false;
+  offlineReadOnly = true;
   currentUser = user;
   const client = await getSupabaseClient();
   if (!client) throw new Error('Cloud sync is not configured.');
   repository = createRepository(client);
   const cached = readCachedSnapshot();
   if (cached?.shows) {
-    state = { ...state, shows: cached.shows };
+    state = { ...state, shows: cached.shows, syncError: false };
     render();
   }
-  try {
-    const shows = await repository.loadShows(user.id);
-    state = { ...state, shows };
-    writeCachedSnapshot({ shows, cachedAt: new Date().toISOString() });
-    render();
-    refreshCloudMetadata();
-  } catch {
-    if (!cached?.shows) {
-      state = { ...state, shows: [] };
-      render();
-      showToast('Cloud data is temporarily unavailable.');
-    }
-  }
+  const synced = await syncCloudShows();
+  if (synced) void refreshCloudMetadata();
 }
 
 async function handleSignIn() {
@@ -805,6 +839,7 @@ async function handleSignOut() {
   currentUser = null;
   repository = null;
   offlineReadOnly = false;
+  cloudSyncPromise = null;
   clearCachedSnapshot();
   state = { ...state, shows: [], menuOpen: false, sheet: null, editingShowId: null, editingSeasons: null, showMenuId: null, completion: null, view: 'main' };
   root.innerHTML = renderAuthView();
@@ -814,13 +849,17 @@ async function refreshCloudMetadata() {
   if (!repository || !state.shows.length) return;
   try {
     const needsSynopsisBackfill = globalThis.localStorage?.getItem(`watching:synopses-v1:${currentUser?.id}`) !== '1';
+    const sourceShows = state.shows;
     const result = await refreshTrackedMetadata({
-      shows: state.shows,
+      shows: sourceShows,
       lastCheckedAt: needsSynopsisBackfill ? null : lastMetadataCheckedAt,
       tvmaze,
       repository,
       now: new Date(),
     });
+    // If a cloud reload or local change happened while TVmaze was updating,
+    // do not overwrite the newer list with the older metadata snapshot.
+    if (state.shows !== sourceShows) return;
     state = { ...state, shows: result.shows };
     lastMetadataCheckedAt = result.checkedAt;
     if (needsSynopsisBackfill) globalThis.localStorage?.setItem(`watching:synopses-v1:${currentUser?.id}`, '1');
@@ -830,10 +869,22 @@ async function refreshCloudMetadata() {
   } catch {}
 }
 
-document.addEventListener('visibilitychange', () => {
-  if (document.visibilityState !== 'visible' || demoMode || !repository) return;
+document.addEventListener('visibilitychange', async () => {
+  if (document.visibilityState !== 'visible' || demoMode) return;
+  if (!repository) {
+    if (navigator.onLine !== false) await boot();
+    return;
+  }
+  const synced = await syncCloudShows();
+  if (!synced) return;
   const then = lastMetadataCheckedAt ? new Date(lastMetadataCheckedAt).getTime() : 0;
-  if (!then || Date.now() - then >= 6 * 60 * 60 * 1000) refreshCloudMetadata();
+  if (!then || Date.now() - then >= 6 * 60 * 60 * 1000) void refreshCloudMetadata();
+});
+
+window.addEventListener('online', () => {
+  if (demoMode) return;
+  if (repository) void syncCloudShows({ notify: true });
+  else void boot();
 });
 
 boot();
