@@ -395,15 +395,23 @@ attachDragController(root, async ({ showId, targetSection, targetIndex }) => {
     return;
   }
   const beforeShows = state.shows;
+  const beforePreferences = state.preferences;
   const nextShows = moveShow(state.shows, showId, targetSection, targetIndex);
-  state = { ...state, shows: nextShows };
+  // Make a successful drop visible, including when its destination was collapsed.
+  const collapsedKey = { watching: 'watchingCollapsed', queued: 'queuedCollapsed', someday: 'somedayCollapsed' }[targetSection];
+  const preferences = collapsedKey && state.preferences[collapsedKey]
+    ? { ...state.preferences, [collapsedKey]: false }
+    : state.preferences;
+  state = { ...state, shows: nextShows, preferences };
+  if (preferences !== beforePreferences) writePreferences(preferences);
   writeCachedSnapshot({ shows: state.shows, cachedAt: new Date().toISOString() });
   render();
   if (repository) {
     try {
       await repository.saveShowPlacement(nextShows.filter(show => ['watching', 'queued', 'someday'].includes(show.section)));
     } catch {
-      state = { ...state, shows: beforeShows };
+      state = { ...state, shows: beforeShows, preferences: beforePreferences };
+      if (preferences !== beforePreferences) writePreferences(beforePreferences);
       writeCachedSnapshot({ shows: state.shows, cachedAt: new Date().toISOString() });
       render();
       showToast('Could not sync that order.');
