@@ -67,7 +67,7 @@ test('menu contains archive font controls sign out and version but no sorting', 
   assert.match(html, /data-theme-mode="system"/);
   assert.match(html, /data-theme-mode="light"/);
   assert.match(html, /data-theme-mode="dark"/);
-  assert.match(html, /v0\.3\.2/);
+  assert.match(html, /v0\.3\.3/);
   assert.doesNotMatch(html, /Alphabetical|Sort/);
 });
 
@@ -140,4 +140,23 @@ test('Set Aside preserves progress and provides Resume without confusing it with
   assert.match(html, /Season 6 · 1\/2 watched/);
   assert.match(html, /data-action="resume-set-aside"/);
   assert.doesNotMatch(html, /Finished/);
+});
+
+test('sync failure displays a persistent warning and a way to retry', () => {
+  const html = renderAppMarkup({ ...state, syncError: true });
+  assert.match(html, /Showing a saved copy\. Cloud sync is unavailable/);
+  assert.match(html, /data-action="sync-now">Retry sync/);
+  assert.match(html, /role="alert"/);
+});
+
+test('hamburger menu offers manual cloud resync', () => {
+  const html = renderAppMarkup({ ...state, menuOpen: true });
+  assert.match(html, /data-action="sync-now">Sync now/);
+});
+
+test('With Priya filter is explicitly identified with Show all control', () => {
+  const html = renderAppMarkup({ ...state, preferences: { ...state.preferences, priyaFilter: true } });
+  assert.match(html, /With Priya filter is on/);
+  assert.match(html, /data-action="toggle-priya-filter">Show all shows/);
+  assert.doesNotMatch(renderAppMarkup(state), /class="filter-notice"/);
 });

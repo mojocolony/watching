@@ -99,6 +99,27 @@ button:focus-visible, input:focus-visible {
 }
 
 .main-view { display: grid; gap: clamp(34px, 7vw, 52px); }
+.sync-warning, .filter-notice {
+  font-size: var(--meta-font-size);
+  line-height: 1.5;
+  color: var(--muted);
+}
+.sync-warning {
+  margin: 8px 0 20px;
+  padding: 12px 0;
+  border-block: 1px solid var(--line);
+}
+.filter-notice { margin-bottom: -14px; }
+.sync-warning button, .filter-notice button {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--accent);
+  font: inherit;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
 .watch-section { min-width: 0; }
 .section-heading {
   display: flex;

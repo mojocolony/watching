@@ -1,4 +1,4 @@
-const CACHE = 'watching-shell-v8';
+const CACHE = 'watching-shell-v9';
 const SHELL = [
   './',
   './index.html',
@@ -8,6 +8,7 @@ const SHELL = [
   './src/config.js',
   './src/demo-data.js',
   './src/domain/ordering.js',
+  './src/domain/cloud-sync.js',
   './src/domain/shows.js',
   './src/storage/cache.js',
   './src/storage/preferences.js',
@@ -71,7 +72,9 @@ self.addEventListener('fetch', event => {
     return;
   }
 
-  if (isAppMetadataRequest(url)) {
+  // App code must not remain frozen on an installed PWA after a release.
+  // Fall back to the cached shell only when the network is unavailable.
+  if (isAppMetadataRequest(url) || url.pathname.includes('/src/')) {
     event.respondWith(networkFirstWithCache(request));
     return;
   }
