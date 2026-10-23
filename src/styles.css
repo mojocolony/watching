@@ -217,6 +217,8 @@ button:focus-visible, input:focus-visible {
 .episode-row--watched .episode-runtime { color: var(--dim); }
 .episode-synopsis { padding: 0 18px 10px; color: var(--muted); font-size: var(--meta-font-size); }
 .episode-synopsis summary { width: fit-content; cursor: pointer; color: var(--accent); font-size: .9em; list-style-position: inside; }
+.episode-row--watched .episode-synopsis,
+.episode-row--watched .episode-synopsis summary { color: var(--dim); }
 .episode-synopsis p { margin: 8px 0 3px; line-height: 1.6; white-space: pre-line; overflow-wrap: anywhere; }
 
 .floating-pill {

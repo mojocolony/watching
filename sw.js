@@ -1,4 +1,4 @@
-const CACHE = 'watching-shell-v7';
+const CACHE = 'watching-shell-v8';
 const SHELL = [
   './',
   './index.html',

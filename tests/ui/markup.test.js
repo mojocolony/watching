@@ -84,3 +84,16 @@ test('an empty Someday section supplies a visible drop zone during a drag', () =
   assert.match(html, /class="show-list show-list--empty"/);
   assert.match(html, /data-drop-section="someday"/);
 });
+
+test('watched episodes also dim the synopsis label and body without hiding the disclosure', async () => {
+  const episode = { id: 'e1', episodeNumber: 1, title: 'Watched', watched: true, summary: 'An episode recap.' };
+  const watched = renderEpisodeRow(episode, show.id);
+  const unwatched = renderEpisodeRow({ ...episode, watched: false }, show.id);
+  assert.match(watched, /class="episode-row episode-row--watched"/);
+  assert.match(watched, /<details class="episode-synopsis"><summary>Synopsis<\/summary><p>An episode recap.<\/p><\/details>/);
+  assert.doesNotMatch(unwatched, /episode-row--watched/);
+
+  const { readFile } = await import('node:fs/promises');
+  const css = await readFile(new URL('../../src/styles.css', import.meta.url), 'utf8');
+  assert.match(css, /\.episode-row--watched \.episode-synopsis,\s*\.episode-row--watched \.episode-synopsis summary\s*\{\s*color:\s*var\(--dim\);\s*\}/);
+});
