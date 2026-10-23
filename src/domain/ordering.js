@@ -1,4 +1,4 @@
-const ACTIVE_SECTIONS = new Set(['watching', 'queued']);
+const ACTIVE_SECTIONS = new Set(['watching', 'queued', 'someday']);
 
 export function normalizeSectionOrder(shows, section) {
   if (!ACTIVE_SECTIONS.has(section)) return shows.map(show => ({ ...show }));
@@ -36,6 +36,7 @@ export function moveShow(shows, showId, targetSection, targetIndex) {
 
   const watching = next.filter(show => show.section === 'watching').sort((a, b) => a.sortOrder - b.sortOrder);
   const queued = next.filter(show => show.section === 'queued').sort((a, b) => a.sortOrder - b.sortOrder);
-  const archived = shows.filter(show => show.section === 'archived').map(show => ({ ...show }));
-  return [...watching, ...queued, ...archived];
+  const someday = next.filter(show => show.section === 'someday').sort((a, b) => a.sortOrder - b.sortOrder);
+  const inactive = next.filter(show => show.section === 'set_aside' || show.section === 'archived');
+  return [...watching, ...queued, ...someday, ...inactive];
 }
