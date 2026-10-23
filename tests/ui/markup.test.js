@@ -64,3 +64,17 @@ test('future season with no episodes says episodes are not announced instead of 
   assert.match(html, /No episode information yet/);
   assert.doesNotMatch(html, /Episode 0\/0/);
 });
+
+test('episode synopses display full escaped text behind a separate disclosure', () => {
+  const html = renderEpisodeRow({ id: 'e3', episodeNumber: 3, title: 'Third', watched: false, summary: 'Full story <not HTML> & spoilers.' }, 's1');
+  assert.match(html, /<details class="episode-synopsis">/);
+  assert.match(html, /Full story &lt;not HTML&gt; &amp; spoilers/);
+  assert.match(html, /<\/button>\s*<details/);
+  assert.doesNotMatch(renderEpisodeRow({ id: 'e4', episodeNumber: 4, title: 'No text', watched: false, summary: null }, 's1'), /episode-synopsis/);
+});
+
+test('Someday offers the same collapsible ordered list as other active sections', () => {
+  const html = renderSection('someday', [show], { somedayCollapsed: false });
+  assert.match(html, /SOMEDAY/);
+  assert.match(html, /data-drop-section="someday"/);
+});
