@@ -67,7 +67,7 @@ test('menu contains archive font controls sign out and version but no sorting', 
   assert.match(html, /data-theme-mode="system"/);
   assert.match(html, /data-theme-mode="light"/);
   assert.match(html, /data-theme-mode="dark"/);
-  assert.match(html, /v0\.2\.2/);
+  assert.match(html, /v0\.3\.0/);
   assert.doesNotMatch(html, /Alphabetical|Sort/);
 });
 
@@ -125,4 +125,19 @@ test('show actions menu includes permanent deletion below Archive', () => {
   assert.ok(archiveIndex >= 0);
   assert.ok(deleteIndex > archiveIndex);
   assert.match(html, />Delete Show</);
+});
+
+test('Someday appears under Queued Up and Set Aside precedes Archive in the menu', () => {
+  const main = renderAppMarkup(state);
+  assert.ok(main.indexOf('QUEUED UP') < main.indexOf('SOMEDAY'));
+  const menu = renderAppMarkup({ ...state, menuOpen: true });
+  assert.ok(menu.indexOf('>Set Aside</button>') < menu.indexOf('>Archive</button>'));
+});
+
+test('Set Aside preserves progress and provides Resume without confusing it with Archive', () => {
+  const paused = { ...state.shows[0], section: 'set_aside', setAsideAt: '2026-10-22T00:00:00Z' };
+  const html = renderAppMarkup({ ...state, view: 'set_aside', shows: [paused] });
+  assert.match(html, /Season 6 · 1\/2 watched/);
+  assert.match(html, /data-action="resume-set-aside"/);
+  assert.doesNotMatch(html, /Finished/);
 });
