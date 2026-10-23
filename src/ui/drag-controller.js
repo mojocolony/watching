@@ -6,11 +6,24 @@ export function getDropIndex(rows, pointerY) {
   return rows.length;
 }
 
+// Resolve a destination from the full section, not just its show list.
+// Empty lists have no usable height, while collapsed sections have no list at all.
+export function findDropSection(sections, hitElement, pointerY) {
+  const direct = hitElement?.closest?.('.watch-section');
+  if (direct && sections.includes(direct)) return direct;
+  return sections.reduce((best, section) => {
+    const rect = section.getBoundingClientRect();
+    const distance = pointerY < rect.top ? rect.top - pointerY : pointerY > rect.bottom ? pointerY - rect.bottom : 0;
+    return !best || distance < best.distance ? { section, distance } : best;
+  }, null)?.section ?? null;
+}
+
 export function attachDragController(root, onMove) {
   let pending = null;
   let active = null;
   let holdTimer = null;
   let marker = null;
+  let highlightedSection = null;
 
   const clearHold = () => {
     if (holdTimer) clearTimeout(holdTimer);
@@ -24,6 +37,8 @@ export function attachDragController(root, onMove) {
     active = null;
     marker?.remove();
     marker = null;
+    highlightedSection?.classList.remove('watch-section--drop-target');
+    highlightedSection = null;
     document.body.classList.remove('dragging-show');
   };
 
@@ -40,26 +55,22 @@ export function attachDragController(root, onMove) {
   const updateTarget = (x, y) => {
     if (!active) return;
     const element = document.elementFromPoint(x, y);
-    const list = element?.closest?.('.show-list') ?? findNearestList(y);
-    if (!list) return;
-    const section = list.dataset.dropSection;
-    if (!section) return;
-    const rows = [...list.querySelectorAll('.show-row:not(.show-row--dragging)')];
-    const boxes = rows.map(row => row.getBoundingClientRect());
-    const index = getDropIndex(boxes, y);
+    const sections = [...root.querySelectorAll('.watch-section')];
+    const destination = findDropSection(sections, element, y);
+    if (!destination) return;
+    const section = destination.dataset.section;
+    if (!['watching', 'queued', 'someday'].includes(section)) return;
+    const list = destination.querySelector('.show-list');
+    const rows = list ? [...list.querySelectorAll('.show-row:not(.show-row--dragging)')] : [];
+    const index = getDropIndex(rows.map(row => row.getBoundingClientRect()), y);
     active.targetSection = section;
     active.targetIndex = index;
-    placeMarker(list, rows, index);
-  };
-
-  const findNearestList = y => {
-    const lists = [...root.querySelectorAll('.show-list')];
-    if (!lists.length) return null;
-    return lists.reduce((best, list) => {
-      const rect = list.getBoundingClientRect();
-      const distance = y < rect.top ? rect.top - y : y > rect.bottom ? y - rect.bottom : 0;
-      return !best || distance < best.distance ? { list, distance } : best;
-    }, null)?.list ?? null;
+    if (highlightedSection !== destination) {
+      highlightedSection?.classList.remove('watch-section--drop-target');
+      highlightedSection = destination;
+      highlightedSection.classList.add('watch-section--drop-target');
+    }
+    placeMarker(list ?? destination, rows, index);
   };
 
   const placeMarker = (list, rows, index) => {
