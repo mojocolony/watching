@@ -12,10 +12,12 @@ export function escapeHtml(value) {
 
 export function renderEpisodeRow(episode, showId) {
   const runtime = episode.runtimeMinutes ? ` <span class="episode-runtime">· ${escapeHtml(episode.runtimeMinutes)}m</span>` : '';
+  const synopsis = String(episode.summary ?? '').trim();
   return `<li class="episode-row${episode.watched ? ' episode-row--watched' : ''}">
     <button class="episode-button" type="button" data-action="toggle-episode" data-show-id="${escapeHtml(showId)}" data-episode-id="${escapeHtml(episode.id)}" aria-pressed="${episode.watched ? 'true' : 'false'}">
       <span>${escapeHtml(episode.episodeNumber)}. ${escapeHtml(episode.title)}</span>${runtime}
     </button>
+    ${synopsis ? `<details class="episode-synopsis"><summary>Synopsis</summary><p>${escapeHtml(synopsis)}</p></details>` : ''}
   </li>`;
 }
 
@@ -30,13 +32,15 @@ function showProgress(show) {
 
 function renderShowActions(show) {
   const priyaLabel = show.withPriya ? 'Remove Priya marker' : 'Mark With Priya';
-  const moveLabel = show.section === 'watching' ? 'Move to Queued Up' : 'Move to Now Watching';
-  const moveTarget = show.section === 'watching' ? 'queued' : 'watching';
+  const sections = [['watching', 'Now Watching'], ['queued', 'Queued Up'], ['someday', 'Someday']];
+  const moves = sections.filter(([section]) => section !== show.section)
+    .map(([section, label]) => `<button type="button" role="menuitem" data-action="move-show-section" data-show-id="${escapeHtml(show.id)}" data-section="${section}">Move to ${label}</button>`).join('');
   return `<div class="show-actions-scrim" data-action="close-show-menu"></div>
     <div class="show-actions-menu" role="menu" aria-label="${escapeHtml(show.title)} actions">
       <button type="button" role="menuitem" data-action="edit-show" data-show-id="${escapeHtml(show.id)}">Edit</button>
       <button type="button" role="menuitem" data-action="toggle-show-priya" data-show-id="${escapeHtml(show.id)}">${priyaLabel}</button>
-      <button type="button" role="menuitem" data-action="move-show-section" data-show-id="${escapeHtml(show.id)}" data-section="${moveTarget}">${moveLabel}</button>
+      ${moves}
+      <button type="button" role="menuitem" data-action="set-aside-show" data-show-id="${escapeHtml(show.id)}">Set Aside</button>
       <button class="show-actions-danger" type="button" role="menuitem" data-action="archive-show" data-show-id="${escapeHtml(show.id)}">Archive</button>
       <button class="show-actions-danger" type="button" role="menuitem" data-action="delete-show" data-show-id="${escapeHtml(show.id)}">Delete Show</button>
     </div>`;
@@ -68,8 +72,8 @@ export function renderShowRow(show, { menuOpen = false } = {}) {
 
 export function renderSection(section, shows, preferences, showMenuId = null) {
   const isWatching = section === 'watching';
-  const label = isWatching ? 'NOW WATCHING' : 'QUEUED UP';
-  const collapsed = isWatching ? preferences.watchingCollapsed : preferences.queuedCollapsed;
+  const label = isWatching ? 'NOW WATCHING' : section === 'queued' ? 'QUEUED UP' : 'SOMEDAY';
+  const collapsed = isWatching ? preferences.watchingCollapsed : section === 'queued' ? preferences.queuedCollapsed : preferences.somedayCollapsed;
   const contents = collapsed ? '' : `<div class="show-list" data-drop-section="${section}">${shows.map(show => renderShowRow(show, { menuOpen: show.id === showMenuId })).join('')}</div>`;
   return `<section class="watch-section" data-section="${section}">
     <button class="section-heading" type="button" data-action="toggle-section" data-section="${section}" aria-expanded="${collapsed ? 'false' : 'true'}">
