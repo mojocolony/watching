@@ -2,9 +2,9 @@
 
 Watching is a deliberately lightweight personal TV-progress tracker. It keeps three manually ordered lists, **Now Watching**, **Queued Up**, and **Someday**, with collapsible episode lists, watched progress, runtimes, a “with Priya” marker/filter, season completion, and Archive.
 
-Version: **0.3.2**
+Version: **0.3.3**
 
-## What v0.3.2 does
+## What v0.3.3 does
 
 - Manually ordered **Now Watching**, **Queued Up**, and **Someday** sections
 - Drag shows within a section or between sections, including into an empty or collapsed Someday list (drop on its heading)
@@ -24,7 +24,9 @@ Version: **0.3.2**
 - Installable PWA
 - Compact progress line: `Season 1/4 · Episode 5/8`
 - Three-dot show menu for Edit, Priya marker, moving between all three lists, Set Aside, and Archive
-- Multi-device sync through Supabase
+- Multi-device sync through Supabase, with automatic refresh on PWA foreground/online events and a manual Sync now control
+- Persistent read-only warning when cloud sync fails, so cached data cannot silently appear current
+- Clear notice when the With Priya filter is active
 
 ## Backend: shared Ticking Supabase project
 
