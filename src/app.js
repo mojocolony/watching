@@ -1,6 +1,7 @@
 import { getPublicConfig, isCloudConfigured } from './config.js';
 import { DEMO_SHOWS } from './demo-data.js';
 import { moveShow } from './domain/ordering.js';
+import { reconcileCloudShows } from './domain/cloud-sync.js';
 import { isSeasonComplete } from './domain/shows.js';
 import { tvmaze } from './services/tvmaze.js';
 import { getCurrentUser, signIn, signOut } from './services/auth.js';
