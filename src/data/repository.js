@@ -164,7 +164,7 @@ export function createRepository(client) {
         title: episode.title,
         runtime_minutes: episode.runtimeMinutes ?? null,
         airdate: episode.airdate ?? null,
-    summary: episode.summary ?? null,
+        summary: episode.summary ?? null,
         watched: Boolean(episode.watched),
       }));
       if (episodeRows.length) {
@@ -254,8 +254,7 @@ export function createRepository(client) {
             title: episode.title,
             runtime_minutes: episode.runtimeMinutes ?? null,
             airdate: episode.airdate ?? null,
-         summary: episode.summary ?? null,
-    summary: episode.summary ?? null,
+            summary: episode.summary ?? null,
             watched: false,
           }, { onConflict: 'season_id,episode_number' }).select('id').single();
           throwIf(insertError);
