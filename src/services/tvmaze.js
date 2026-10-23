@@ -35,6 +35,7 @@ function normalizeEpisode(episode) {
     title: textOnly(episode.name, `Episode ${episode.number}`),
     runtimeMinutes: Number.isFinite(Number(episode.runtime)) && Number(episode.runtime) > 0 ? Number(episode.runtime) : null,
     airdate: episode.airdate || null,
+    summary: textOnly(episode.summary, '') || null,
   };
 }
 
