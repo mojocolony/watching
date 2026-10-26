@@ -127,7 +127,7 @@ function renderProviderSheet(state) {
         <option value="__other__" ${isOther ? 'selected' : ''}>Other…</option>
       </select>
       <input class="text-field" data-field="watch-provider-other" placeholder="Other provider" aria-label="Other provider" value="${isOther ? escapeHtml(selected) : ''}">
-      <button class="primary-button" type="button" data-action="save-watch-provider">Save</button>
+      <p class="sheet-kicker">Automatic results use TMDB/JustWatch Canadian availability and may differ by season. Manual choices are retained.</p><button class="primary-button" type="button" data-action="save-watch-provider">Save</button>
     </section>`;
 }
 
