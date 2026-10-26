@@ -525,18 +525,19 @@ async function saveWatchProvider() {
   writeCachedSnapshot({ shows: state.shows, cachedAt: new Date().toISOString() });
   render();
   if (!manual) {
-    if (config.tmdbToken) void refreshWatchProvider(show.id);
-    else showToast('Automatic lookup needs a TMDB API key.');
+    void refreshWatchProvider(show.id);
   }
 }
 
 async function refreshWatchProvider(showId) {
-  if (!repository || !config.tmdbToken) return;
+  if (!repository) return;
   const show = state.shows.find(item => item.id === showId);
   if (!show || show.watchProviderManual || show.source !== 'tvmaze') return;
   try {
-    const { findCanadianStreamingProvider } = await import('./services/watch-providers.js');
-    const provider = await findCanadianStreamingProvider(show.title, config.tmdbToken);
+    const client = await getSupabaseClient();
+    const { data, error } = await client.functions.invoke('watching-providers', { body: { title: show.title } });
+    if (error || data?.error) return;
+    const provider = data?.provider;
     if (!provider) return;
     const fresh = state.shows.find(item => item.id === showId);
     if (!fresh || fresh.watchProviderManual) return;
@@ -871,7 +872,7 @@ async function loadCloudUser(user) {
     render();
   }
   const synced = await syncCloudShows();
-  if (synced) { void refreshCloudMetadata(); if (config.tmdbToken) state.shows.filter(show => !show.watchProviderManual && !show.watchProvider).forEach(show => void refreshWatchProvider(show.id)); }
+  if (synced) { void refreshCloudMetadata(); state.shows.filter(show => !show.watchProviderManual && !show.watchProvider).forEach(show => void refreshWatchProvider(show.id)); }
 }
 
 async function handleSignIn() {
