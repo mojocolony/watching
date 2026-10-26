@@ -524,7 +524,10 @@ async function saveWatchProvider() {
     sheet: null, providerShowId: null };
   writeCachedSnapshot({ shows: state.shows, cachedAt: new Date().toISOString() });
   render();
-  if (!manual) void refreshWatchProvider(show.id);
+  if (!manual) {
+    if (config.tmdbToken) void refreshWatchProvider(show.id);
+    else showToast('Automatic lookup needs a TMDB API key.');
+  }
 }
 
 async function refreshWatchProvider(showId) {
