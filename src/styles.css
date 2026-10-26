@@ -188,6 +188,7 @@ button:focus-visible, input:focus-visible {
 .priya-marker { display: inline-flex; flex: none; color: var(--muted); }
 .show-meta { color: var(--muted); font-size: var(--meta-font-size); letter-spacing: -.015em; overflow-wrap: anywhere; }
 .show-provider { color: inherit; opacity: 1; }
+.show-meta-mobile { display: none; }
 .show-chevron { color: var(--muted); flex: none; }
 .show-actions-button {
   display: grid; flex: none; width: 42px; height: 44px; place-items: center; padding: 0; border: 0;
@@ -411,6 +412,12 @@ button:focus-visible, input:focus-visible {
   .app-header { margin-bottom: 28px; }
   .main-view { gap: 34px; }
   .show-toggle { min-height: 66px; }
+  .show-copy { flex: 1; }
+  .show-meta { min-width: 0; }
+  .show-meta-full { display: none; }
+  .show-meta-mobile { display: flex; width: 100%; align-items: baseline; justify-content: space-between; gap: 10px; }
+  .show-progress-mobile { flex: none; white-space: nowrap; }
+  .show-provider-mobile { min-width: 0; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: right; }
   .episode-button { padding-right: 12px; padding-left: 10px; }
   .floating-pill { right: 16px; }
   .menu-panel { right: 16px; }
