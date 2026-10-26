@@ -25,7 +25,7 @@ Version: **0.3.4**
 - Compact progress line: `Season 1/4 · Episode 5/8`
 - Three-dot show menu for Edit, Priya marker, moving between all three lists, Set Aside, and Archive
 - Per-show streaming/source label beside the season/episode count; manual Jellyfin, Download and platform overrides persist across devices
-- Optional Canadian TMDB/JustWatch streaming lookup via WATCHING_CONFIG.tmdbToken (TMDB credential must be configured before automatic detection works)
+- Optional Canadian TMDB/JustWatch streaming lookup through an authenticated Supabase Edge Function (requires WATCHING_TMDB_TOKEN in Supabase Edge Function secrets)
 - Multi-device sync through Supabase, with automatic refresh on PWA foreground/online events and a manual Sync now control
 - Persistent read-only warning when cloud sync fails, so cached data cannot silently appear current
 - Clear notice when the With Priya filter is active
@@ -91,7 +91,7 @@ It never deliberately changes:
 
 ## Provider configuration
 
-Database columns `watch_provider` (nullable text) and `watch_provider_manual` (boolean) were added via the Supabase migration `watching_provider_selection` on October 26, 2026. Keep the migration in source control. Automatic lookups require `tmdbToken` in the browser's `WATCHING_CONFIG` (TMDB v3 API key or v4 read-only access token). TMDB watch-provider information originates with JustWatch, is series-level, and is not evidence a specific season is available. The browser credential is public; do not place a confidential token here. Manual overrides do not need TMDB.
+Database columns `watch_provider` (nullable text) and `watch_provider_manual` (boolean) were added via the Supabase migration `watching_provider_selection` on October 26, 2026. Keep the migration in source control. Automatic lookups call the authenticated `watching-providers` Supabase Edge Function, which reads `WATCHING_TMDB_TOKEN` as a server-side Edge Function secret. Configure this in Supabase Dashboard → Edge Functions → Secrets. Never put the token in the GitHub Pages browser configuration. TMDB watch-provider information originates with JustWatch and is series-level. Manual overrides do not require the token.
 
 ## Run locally
 
