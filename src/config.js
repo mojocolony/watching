@@ -7,7 +7,6 @@ export function getPublicConfig(source = globalThis.WATCHING_CONFIG ?? {}) {
     supabaseUrl: String(source.supabaseUrl ?? '').trim(),
     supabaseKey: String(source.supabaseKey ?? '').trim(),
     demoMode: source.demoMode === true,
-    tmdbToken: String(source.tmdbToken ?? '').trim(),
   };
 }
 
