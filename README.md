@@ -2,9 +2,9 @@
 
 Watching is a deliberately lightweight personal TV-progress tracker. It keeps three manually ordered lists, **Now Watching**, **Queued Up**, and **Someday**, with collapsible episode lists, watched progress, runtimes, a “with Priya” marker/filter, season completion, and Archive.
 
-Version: **0.3.3**
+Version: **0.3.4**
 
-## What v0.3.3 does
+## What v0.3.4 does
 
 - Manually ordered **Now Watching**, **Queued Up**, and **Someday** sections
 - Drag shows within a section or between sections, including into an empty or collapsed Someday list (drop on its heading)
@@ -24,6 +24,8 @@ Version: **0.3.3**
 - Installable PWA
 - Compact progress line: `Season 1/4 · Episode 5/8`
 - Three-dot show menu for Edit, Priya marker, moving between all three lists, Set Aside, and Archive
+- Per-show streaming/source label beside the season/episode count; manual Jellyfin, Download and platform overrides persist across devices
+- Optional Canadian TMDB/JustWatch streaming lookup via WATCHING_CONFIG.tmdbToken (TMDB credential must be configured before automatic detection works)
 - Multi-device sync through Supabase, with automatic refresh on PWA foreground/online events and a manual Sync now control
 - Persistent read-only warning when cloud sync fails, so cached data cannot silently appear current
 - Clear notice when the With Priya filter is active
@@ -86,6 +88,10 @@ It never deliberately changes:
 - manual show order
 - Now Watching / Queued Up / Someday / Set Aside placement
 - With Priya state
+
+## Provider configuration
+
+Database columns `watch_provider` (nullable text) and `watch_provider_manual` (boolean) were added via the Supabase migration `watching_provider_selection` on October 26, 2026. Keep the migration in source control. Automatic lookups require `tmdbToken` in the browser's `WATCHING_CONFIG` (TMDB v3 API key or v4 read-only access token). TMDB watch-provider information originates with JustWatch, is series-level, and is not evidence a specific season is available. The browser credential is public; do not place a confidential token here. Manual overrides do not need TMDB.
 
 ## Run locally
 
