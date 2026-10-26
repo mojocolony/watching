@@ -109,6 +109,28 @@ function renderEditSheet(state) {
   return `<div class="sheet-scrim" data-action="close-sheet"></div><section class="sheet" role="dialog" aria-modal="true">${renderEditShowSheet(show, state.editingSeasons ?? [])}</section>`;
 }
 
+function renderProviderSheet(state) {
+  const show = state.shows.find(item => item.id === state.providerShowId);
+  if (!show) return '';
+  const options = ['Netflix', 'Prime Video', 'Apple TV+', 'Crave', 'Disney+', 'CBC Gem', 'Global TV', 'CTV', 'Citytv', 'Paramount+', 'Hayu', 'Jellyfin', 'Download'];
+  const selected = show.watchProviderManual ? (show.watchProvider || '') : '__auto__';
+  const isOther = selected && !options.includes(selected) && selected !== '__auto__';
+  return `<div class="sheet-scrim" data-action="close-sheet"></div>
+    <section class="sheet" role="dialog" aria-modal="true" aria-label="Streaming service or source">
+      <div class="sheet-header"><h2>Watching on</h2><button class="icon-button" type="button" data-action="close-sheet" aria-label="Close">×</button></div>
+      <p class="edit-show-title">${escapeHtml(show.title)}</p>
+      <label class="field-label" for="watch-provider-select">Streaming service / source</label>
+      <select id="watch-provider-select" class="text-field" data-field="watch-provider">
+        <option value="__auto__" ${selected === '__auto__' ? 'selected' : ''}>Automatic (Canada)</option>
+        <option value="" ${selected === '' ? 'selected' : ''}>None</option>
+        ${options.map(item => `<option value="${escapeHtml(item)}" ${selected === item ? 'selected' : ''}>${escapeHtml(item)}</option>`).join('')}
+        <option value="__other__" ${isOther ? 'selected' : ''}>Other…</option>
+      </select>
+      <input class="text-field" data-field="watch-provider-other" placeholder="Other provider" aria-label="Other provider" value="${isOther ? escapeHtml(selected) : ''}">
+      <button class="primary-button" type="button" data-action="save-watch-provider">Save</button>
+    </section>`;
+}
+
 function renderCompletion(state) {
   if (!state.completion) return '';
   const show = state.shows.find(item => item.id === state.completion.showId);
@@ -152,6 +174,7 @@ export function renderAppMarkup(state) {
     ${renderMenu(state)}
     ${state.sheet === 'add' ? renderAddSheet() : ''}
     ${state.sheet === 'edit' ? renderEditSheet(state) : ''}
+    ${state.sheet === 'provider' ? renderProviderSheet(state) : ''}
     ${renderCompletion(state)}
   </div>`;
 }
