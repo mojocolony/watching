@@ -187,7 +187,7 @@ button:focus-visible, input:focus-visible {
 }
 .priya-marker { display: inline-flex; flex: none; color: var(--muted); }
 .show-meta { color: var(--muted); font-size: var(--meta-font-size); letter-spacing: -.015em; overflow-wrap: anywhere; }
-.show-provider { color: var(--accent); }
+.show-provider { color: var(--text); opacity: .76; }
 .show-chevron { color: var(--muted); flex: none; }
 .show-actions-button {
   display: grid; flex: none; width: 42px; height: 44px; place-items: center; padding: 0; border: 0;
