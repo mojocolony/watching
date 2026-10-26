@@ -324,6 +324,12 @@ async function restoreArchivedShow(showId) {
 }
 
 root.addEventListener('input', event => {
+  if (event.target.dataset.field !== 'watch-provider-other') return;
+  const select = root.querySelector('[data-field="watch-provider"]');
+  if (select && event.target.value.trim()) select.value = '__other__';
+});
+
+root.addEventListener('input', event => {
   if (event.target.dataset.field !== 'show-search') return;
   const query = event.target.value.trim();
   clearTimeout(searchTimer);
