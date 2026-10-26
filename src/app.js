@@ -121,6 +121,12 @@ root.addEventListener('click', event => {
     case 'close-sheet':
       dispatch({ type: 'close-sheet' });
       break;
+    case 'choose-watch-provider':
+      openWatchProvider(target.dataset.showId);
+      break;
+    case 'save-watch-provider':
+      void saveWatchProvider();
+      break;
     case 'edit-show':
       openEditShow(target.dataset.showId);
       break;
@@ -489,6 +495,56 @@ async function saveManualShow() {
   }
 }
 
+
+function openWatchProvider(showId) {
+  if (!ensureWritable()) return;
+  const show = state.shows.find(item => item.id === showId);
+  if (!show) return;
+  state = { ...state, sheet: 'provider', providerShowId: showId, showMenuId: null };
+  render();
+  const select = root.querySelector('[data-field="watch-provider"]');
+  if (select) select.value = show.watchProviderManual ? (show.watchProvider || '') : '__auto__';
+}
+
+async function saveWatchProvider() {
+  if (!ensureWritable()) return;
+  const show = state.shows.find(item => item.id === state.providerShowId);
+  if (!show) return;
+  const selected = root.querySelector('[data-field="watch-provider"]')?.value || '';
+  const manual = selected !== '__auto__';
+  const provider = manual ? (selected === '__other__'
+    ? root.querySelector('[data-field="watch-provider-other"]')?.value.trim().slice(0,80)
+    : selected) : (show.watchProviderManual ? null : show.watchProvider);
+  if (manual && !provider) { showToast('Enter a service name.'); return; }
+  try {
+    if (repository) await repository.updateShow(show.id, { watchProvider: provider, watchProviderManual: manual });
+  } catch { showToast('Could not save the service.'); return; }
+  state = { ...state, shows: state.shows.map(item => item.id === show.id
+    ? { ...item, watchProvider: provider, watchProviderManual: manual } : item),
+    sheet: null, providerShowId: null };
+  writeCachedSnapshot({ shows: state.shows, cachedAt: new Date().toISOString() });
+  render();
+  if (!manual) void refreshWatchProvider(show.id);
+}
+
+async function refreshWatchProvider(showId) {
+  if (!repository || !config.tmdbToken) return;
+  const show = state.shows.find(item => item.id === showId);
+  if (!show || show.watchProviderManual || show.source !== 'tvmaze') return;
+  try {
+    const { findCanadianStreamingProvider } = await import('./services/watch-providers.js');
+    const provider = await findCanadianStreamingProvider(show.title, config.tmdbToken);
+    if (!provider) return;
+    const fresh = state.shows.find(item => item.id === showId);
+    if (!fresh || fresh.watchProviderManual) return;
+    await repository.updateShow(showId, { watchProvider: provider, watchProviderManual: false });
+    state = { ...state, shows: state.shows.map(item => item.id === showId && !item.watchProviderManual
+      ? { ...item, watchProvider: provider } : item) };
+    writeCachedSnapshot({ shows: state.shows, cachedAt: new Date().toISOString() });
+    render();
+  } catch { /* Provider lookup is optional; never disrupt watching progress. */ }
+}
+
 async function openEditShow(showId) {
   if (!ensureWritable()) return;
   const show = state.shows.find(item => item.id === showId);
@@ -812,7 +868,7 @@ async function loadCloudUser(user) {
     render();
   }
   const synced = await syncCloudShows();
-  if (synced) void refreshCloudMetadata();
+  if (synced) { void refreshCloudMetadata(); if (config.tmdbToken) state.shows.filter(show => !show.watchProviderManual && !show.watchProvider).forEach(show => void refreshWatchProvider(show.id)); }
 }
 
 async function handleSignIn() {
