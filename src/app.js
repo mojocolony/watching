@@ -33,6 +33,7 @@ let currentUser = null;
 let repository = null;
 let offlineReadOnly = false;
 let cloudSyncPromise = null;
+let providerRefreshPromise = null;
 let lastMetadataCheckedAt = globalThis.localStorage?.getItem('watching:metadata-checked-at') || null;
 
 let state = {
@@ -529,6 +530,20 @@ async function saveWatchProvider() {
   }
 }
 
+async function backfillWatchProviders() {
+  if (providerRefreshPromise) return providerRefreshPromise;
+  const userId = currentUser?.id;
+  const candidates = state.shows.filter(show => show.source === 'tvmaze' && !show.watchProviderManual && !show.watchProvider).map(show => show.id);
+  const run = (async () => {
+    for (const showId of candidates) {
+      if (!repository || currentUser?.id !== userId) break;
+      await refreshWatchProvider(showId);
+    }
+  })();
+  providerRefreshPromise = run;
+  try { await run; } finally { if (providerRefreshPromise === run) providerRefreshPromise = null; }
+}
+
 async function refreshWatchProvider(showId) {
   if (!repository) return;
   const show = state.shows.find(item => item.id === showId);
@@ -536,7 +551,10 @@ async function refreshWatchProvider(showId) {
   try {
     const client = await getSupabaseClient();
     const { data, error } = await client.functions.invoke('watching-providers', { body: { title: show.title } });
-    if (error || data?.error) return;
+    if (error || data?.error) {
+      console.warn('Watching: provider lookup unavailable', data?.error || error?.message || 'Unknown error');
+      return;
+    }
     const provider = data?.provider;
     if (!provider) return;
     const fresh = state.shows.find(item => item.id === showId);
@@ -546,7 +564,7 @@ async function refreshWatchProvider(showId) {
       ? { ...item, watchProvider: provider } : item) };
     writeCachedSnapshot({ shows: state.shows, cachedAt: new Date().toISOString() });
     render();
-  } catch { /* Provider lookup is optional; never disrupt watching progress. */ }
+  } catch (error) { console.warn('Watching: provider lookup failed', error); }
 }
 
 async function openEditShow(showId) {
@@ -872,7 +890,7 @@ async function loadCloudUser(user) {
     render();
   }
   const synced = await syncCloudShows();
-  if (synced) { void refreshCloudMetadata(); state.shows.filter(show => !show.watchProviderManual && !show.watchProvider).forEach(show => void refreshWatchProvider(show.id)); }
+  if (synced) { void refreshCloudMetadata(); void backfillWatchProviders(); }
 }
 
 async function handleSignIn() {
