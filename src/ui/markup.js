@@ -37,6 +37,7 @@ function renderShowActions(show) {
     .map(([section, label]) => `<button type="button" role="menuitem" data-action="move-show-section" data-show-id="${escapeHtml(show.id)}" data-section="${section}">Move to ${label}</button>`).join('');
   return `<div class="show-actions-scrim" data-action="close-show-menu"></div>
     <div class="show-actions-menu" role="menu" aria-label="${escapeHtml(show.title)} actions">
+      <button type="button" role="menuitem" data-action="choose-watch-provider" data-show-id="${escapeHtml(show.id)}">Streaming service / source</button>
       <button type="button" role="menuitem" data-action="edit-show" data-show-id="${escapeHtml(show.id)}">Edit</button>
       <button type="button" role="menuitem" data-action="toggle-show-priya" data-show-id="${escapeHtml(show.id)}">${priyaLabel}</button>
       ${moves}
@@ -59,7 +60,7 @@ export function renderShowRow(show, { menuOpen = false } = {}) {
       <button class="show-toggle" type="button" data-action="toggle-show" data-show-id="${escapeHtml(show.id)}" aria-expanded="${expanded ? 'true' : 'false'}">
         <span class="show-copy">
           <span class="show-title-line"><span class="show-title">${escapeHtml(show.title)}</span>${priya}</span>
-          <span class="show-meta">${showProgress(show)}</span>
+          <span class="show-meta">${showProgress(show)}${show.watchProvider ? ` · <span class="show-provider">${escapeHtml(show.watchProvider)}</span>` : ""}</span>
         </span>
         <span class="show-chevron">${icon(expanded ? 'chevron-up' : 'chevron-down', { size: 19 })}</span>
       </button>
