@@ -32,6 +32,8 @@ export function mapDbShow(row) {
     section: row.section,
     sortOrder: Number(row.sort_order ?? 0),
     withPriya: Boolean(row.with_priya),
+    watchProvider: row.watch_provider ?? null,
+    watchProviderManual: Boolean(row.watch_provider_manual),
     currentSeason: Number(row.current_season),
     totalSeasons: row.total_seasons == null ? null : Number(row.total_seasons),
     availableSeasonNumber: row.available_season_number == null ? null : Number(row.available_season_number),
@@ -98,6 +100,8 @@ function showInsertPayload(userId, payload) {
     section: payload.section,
     sort_order: payload.sortOrder ?? 0,
     with_priya: Boolean(payload.withPriya),
+    watch_provider: payload.watchProvider ?? null,
+    watch_provider_manual: Boolean(payload.watchProviderManual),
     current_season: Number(payload.currentSeason),
     total_seasons: payload.totalSeasons == null ? null : Number(payload.totalSeasons),
     available_season_number: payload.availableSeasonNumber ?? null,
@@ -181,6 +185,8 @@ export function createRepository(client) {
       if ('section' in patch) dbPatch.section = patch.section;
       if ('sortOrder' in patch) dbPatch.sort_order = patch.sortOrder;
       if ('withPriya' in patch) dbPatch.with_priya = Boolean(patch.withPriya);
+      if ('watchProvider' in patch) dbPatch.watch_provider = patch.watchProvider;
+      if ('watchProviderManual' in patch) dbPatch.watch_provider_manual = Boolean(patch.watchProviderManual);
       if ('currentSeason' in patch) dbPatch.current_season = Number(patch.currentSeason);
       if ('totalSeasons' in patch) dbPatch.total_seasons = patch.totalSeasons == null ? null : Number(patch.totalSeasons);
       if ('availableSeasonNumber' in patch) dbPatch.available_season_number = patch.availableSeasonNumber;
