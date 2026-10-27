@@ -34,9 +34,9 @@ function showProgressMobile(show) {
   const { watched, total } = getSeasonProgress(show);
   const seasons = show.totalSeasons == null ? '?' : show.totalSeasons;
   if (total === 0 && show.source !== 'manual') {
-    return `S ${escapeHtml(show.currentSeason)}/${escapeHtml(seasons)} · E TBA`;
+    return `S${escapeHtml(show.currentSeason)}/${escapeHtml(seasons)} · ETBA`;
   }
-  return `S ${escapeHtml(show.currentSeason)}/${escapeHtml(seasons)} · E ${escapeHtml(watched)}/${escapeHtml(total)}`;
+  return `S${escapeHtml(show.currentSeason)}/${escapeHtml(seasons)} · E${escapeHtml(watched)}/${escapeHtml(total)}`;
 }
 
 function mobileProviderName(provider) {
