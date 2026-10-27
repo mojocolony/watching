@@ -98,16 +98,16 @@ test('watched episodes also dim the synopsis label and body without hiding the d
   assert.match(css, /\.episode-row--watched \.episode-synopsis,\s*\.episode-row--watched \.episode-synopsis summary\s*\{\s*color:\s*var\(--dim\);\s*\}/);
 });
 
-test('iPhone metadata has spaced S and E labels and a separate mobile provider', () => {
+test('iPhone metadata has compact S and E labels and a separate mobile provider', () => {
   const html = renderShowRow({ ...show, watchProvider: 'Disney Plus' });
   assert.match(html, /class="show-meta-full">Season 6\/7 · Episode 1\/2 ·/);
-  assert.match(html, /class="show-progress-mobile">S 6\/7 · E 1\/2<\/span>/);
+  assert.match(html, /class="show-progress-mobile">S6\/7 · E1\/2<\/span>/);
   assert.match(html, /class="show-provider show-provider-mobile" title="Disney Plus">Disney\+<\/span>/);
 });
 
 test('iPhone progress handles episodes not announced without inventing a count', () => {
   const html = renderShowRow({ ...show, source: 'tvmaze', currentSeason: 2, totalSeasons: 2, episodes: [], watchProvider: 'Crave' });
-  assert.match(html, /class="show-progress-mobile">S 2\/2 · E TBA<\/span>/);
+  assert.match(html, /class="show-progress-mobile">S2\/2 · ETBA<\/span>/);
 });
 
 test('phone-only provider layout keeps long names on one truncated line', async () => {
