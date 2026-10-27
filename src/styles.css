@@ -415,9 +415,9 @@ button:focus-visible, input:focus-visible {
   .show-copy { flex: 1; }
   .show-meta { min-width: 0; }
   .show-meta-full { display: none; }
-  .show-meta-mobile { display: flex; width: 100%; align-items: baseline; justify-content: space-between; gap: 10px; }
+  .show-meta-mobile { display: flex; width: 100%; align-items: baseline; justify-content: flex-start; gap: 0; }
   .show-progress-mobile { flex: none; white-space: nowrap; }
-  .show-provider-mobile { min-width: 0; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: right; }
+  .show-provider-mobile { min-width: 0; flex: 0 1 auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: left; }
   .episode-button { padding-right: 12px; padding-left: 10px; }
   .floating-pill { right: 16px; }
   .menu-panel { right: 16px; }

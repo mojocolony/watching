@@ -77,7 +77,7 @@ export function renderShowRow(show, { menuOpen = false } = {}) {
             <span class="show-meta-full">${showProgress(show)}${show.watchProvider ? ` · <span class="show-provider">${escapeHtml(show.watchProvider)}</span>` : ""}</span>
             <span class="show-meta-mobile">
               <span class="show-progress-mobile">${showProgressMobile(show)}</span>
-              ${show.watchProvider ? `<span class="show-provider show-provider-mobile" title="${escapeHtml(show.watchProvider)}">${escapeHtml(mobileProviderName(show.watchProvider))}</span>` : ""}
+              ${show.watchProvider ? `<span class="show-provider show-provider-mobile" title="${escapeHtml(show.watchProvider)}"> · ${escapeHtml(mobileProviderName(show.watchProvider))}</span>` : ""}
             </span>
           </span>
         </span>

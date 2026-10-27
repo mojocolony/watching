@@ -98,11 +98,11 @@ test('watched episodes also dim the synopsis label and body without hiding the d
   assert.match(css, /\.episode-row--watched \.episode-synopsis,\s*\.episode-row--watched \.episode-synopsis summary\s*\{\s*color:\s*var\(--dim\);\s*\}/);
 });
 
-test('iPhone metadata has compact S and E labels and a separate mobile provider', () => {
+test('iPhone metadata places the provider immediately after compact episode progress', () => {
   const html = renderShowRow({ ...show, watchProvider: 'Disney Plus' });
   assert.match(html, /class="show-meta-full">Season 6\/7 · Episode 1\/2 ·/);
   assert.match(html, /class="show-progress-mobile">S6\/7 · E1\/2<\/span>/);
-  assert.match(html, /class="show-provider show-provider-mobile" title="Disney Plus">Disney\+<\/span>/);
+  assert.match(html, /class="show-provider show-provider-mobile" title="Disney Plus"> · Disney\+<\/span>/);
 });
 
 test('iPhone progress handles episodes not announced without inventing a count', () => {
@@ -110,9 +110,16 @@ test('iPhone progress handles episodes not announced without inventing a count',
   assert.match(html, /class="show-progress-mobile">S2\/2 · ETBA<\/span>/);
 });
 
-test('phone-only provider layout keeps long names on one truncated line', async () => {
+test('phone-only provider layout follows the episode count, truncating long names', async () => {
   const { readFile } = await import('node:fs/promises');
   const css = await readFile(new URL('../../src/styles.css', import.meta.url), 'utf8');
   assert.match(css, /@media \(max-width: 520px\)/);
-  assert.match(css, /\.show-provider-mobile \{[^}]*text-overflow: ellipsis;[^}]*white-space: nowrap;/);
+  assert.match(css, /\.show-meta-mobile \{[^}]*justify-content: flex-start;[^}]*gap: 0;/);
+  assert.match(css, /\.show-provider-mobile \{[^}]*text-overflow: ellipsis;[^}]*white-space: nowrap;[^}]*text-align: left;/);
+});
+
+test('iPhone without a service has no orphan provider separator', () => {
+  const html = renderShowRow({ ...show, watchProvider: null });
+  assert.match(html, /class="show-progress-mobile">S6\/7 · E1\/2<\/span>/);
+  assert.doesNotMatch(html, /class="show-provider show-provider-mobile"/);
 });
