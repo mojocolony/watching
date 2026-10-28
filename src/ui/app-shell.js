@@ -1,6 +1,7 @@
 import { APP_VERSION } from '../config.js';
 import { renderSection, escapeHtml } from './markup.js';
 import { icon } from './icons.js';
+import { displayProviderName } from '../services/provider-names.js';
 import { renderCompletionSheet } from './completion.js';
 import { renderEditShowSheet } from './add-show.js';
 
@@ -112,8 +113,8 @@ function renderEditSheet(state) {
 function renderProviderSheet(state) {
   const show = state.shows.find(item => item.id === state.providerShowId);
   if (!show) return '';
-  const options = ['Netflix', 'Prime Video', 'Apple TV+', 'Crave', 'Disney+', 'CBC Gem', 'Global TV', 'CTV', 'Citytv', 'Paramount+', 'Hayu', 'Jellyfin', 'Download'];
-  const selected = show.watchProviderManual ? (show.watchProvider || '') : '__auto__';
+  const options = ['Netflix', 'Prime Video', 'Apple TV', 'Crave', 'Disney+', 'CBC Gem', 'Global TV', 'CTV', 'Citytv', 'Paramount+', 'Hayu', 'Jellyfin', 'Download'];
+  const selected = show.watchProviderManual ? displayProviderName(show.watchProvider) : '__auto__';
   const isOther = selected && !options.includes(selected) && selected !== '__auto__';
   return `<div class="sheet-scrim" data-action="close-sheet"></div>
     <section class="sheet" role="dialog" aria-modal="true" aria-label="Streaming service or source">
