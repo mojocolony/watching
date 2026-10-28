@@ -29,6 +29,19 @@ Deno.serve(async req => {
   const api = "https://api.themoviedb.org/3";
   const headers = {Authorization:"Bearer " + secret,Accept:"application/json"};
   const norm = (v: string) => String(v || "").trim().toLocaleLowerCase("en-CA");
+  const eligible = new Map<string, string>([
+    ["netflix", "Netflix"], ["netflix standard with ads", "Netflix"],
+    ["crave", "Crave"],
+    ["prime video", "Prime"], ["amazon prime video", "Prime"],
+    ["amazon prime video with ads", "Prime"], ["prime video with ads", "Prime"],
+    ["prime", "Prime"],
+    ["paramount+", "Paramount+"], ["paramount plus", "Paramount+"],
+    ["paramount plus premium", "Paramount+"], ["paramount plus basic with ads", "Paramount+"],
+    ["disney+", "Disney+"], ["disney plus", "Disney+"],
+    ["apple tv", "AppleTV"], ["apple tv+", "AppleTV"],
+    ["apple tv plus", "AppleTV"], ["appletv", "AppleTV"],
+  ]);
+  const subscribed = (name: string | null) => eligible.get(norm(name)) ?? null;
   // Original Apple TV shows can be identifiable before a Canadian TMDB
   // provider is published. Verify the supplied TVmaze show ID and title.
   let tvmazeShow: {name?: string; premiered?: string; webChannel?: {name?: string}} | null = null;
@@ -45,7 +58,7 @@ Deno.serve(async req => {
   }
   const appleFallback = () => {
     const channel = norm(tvmazeShow?.webChannel?.name);
-    return ['apple tv', 'apple tv+', 'apple tv plus'].includes(channel) ? "Apple TV" : null;
+    return ['apple tv', 'apple tv+', 'apple tv plus'].includes(channel) ? "AppleTV" : null;
   };
   const search = await fetch(api + "/search/tv?query=" + encodeURIComponent(title),{headers});
   if (!search.ok) return json({error:"Provider service unavailable"},502);
@@ -59,8 +72,12 @@ Deno.serve(async req => {
   const providers = await fetch(api + "/tv/" + encodeURIComponent(match.id) + "/watch/providers",{headers});
   if (!providers.ok) return json({error:"Provider service unavailable"},502);
   const options = (await providers.json())?.results?.CA?.flatrate || [];
-  const first = options.sort((a: {display_priority?:number},b:{display_priority?:number}) => (a.display_priority ?? 999)-(b.display_priority ?? 999))[0];
-  const discovered = first?.provider_name || appleFallback();
-  const provider = ['Apple TV Plus', 'Apple TV+'].includes(discovered) ? 'Apple TV' : discovered;
+  // Filter before ranking: never substitute StackTV, BritBox, Starz or any
+  // other separately billed Amazon/Apple channel for the base subscription.
+  const matched = options.filter((item: {provider_name?:string}) => subscribed(item.provider_name ?? null))
+    .sort((a: {display_priority?:number},b:{display_priority?:number}) =>
+      (a.display_priority ?? 999) - (b.display_priority ?? 999));
+  const first = matched[0];
+  const provider = subscribed(first?.provider_name ?? null) || appleFallback();
   return json({provider:provider || null, attribution:first ? "JustWatch" : "TVmaze"});
 });
