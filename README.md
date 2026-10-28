@@ -2,16 +2,16 @@
 
 Watching is a deliberately lightweight personal TV-progress tracker. It keeps three manually ordered lists, **Now Watching**, **Queued Up**, and **Someday**, with collapsible episode lists, watched progress, runtimes, a “with Priya” marker/filter, season completion, and Archive.
 
-Version: **0.3.6**
+Version: **0.3.7**
 
-## What v0.3.6 does
+## What v0.3.7 does
 
 - Manually ordered **Now Watching**, **Queued Up**, and **Someday** sections
 - Drag shows within a section or between sections, including into an empty or collapsed Someday list (drop on its heading)
 - Collapse either section and individual shows
 - Episode number, title, runtime, and expandable full available TVmaze synopsis
 - Tap an episode to toggle watched state; watched episode titles, runtimes, and expandable synopsis labels and text all dim
-- TVmaze show/season/episode lookup with manual fallback
+- TVmaze show/season/episode lookup with manual fallback; new shows default to Season 1 (or earliest listed season if Season 1 is missing), with other seasons selectable
 - Automatic TVmaze metadata refresh for tracked shows
 - Detect newly available seasons for archived shows
 - **Set Aside** in the hamburger menu, above Archive, for paused shows without marking seasons complete
@@ -153,3 +153,7 @@ Apple TV (formerly Apple TV+) is the canonical label in the UI and provider pick
 ### Streaming providers (v0.3.6)
 
 Automatic Canadian streaming availability and the service picker are restricted to **Netflix, Crave, Prime, Paramount+, Disney+, AppleTV**. Only direct included-subscription providers are eligible; paid add-on channels such as StackTV Amazon Channel and BritBox Amazon Channel are excluded, not relabeled as Prime. The iPhone and desktop labels use the same six names. Previously saved automatic out-of-list providers are hidden immediately and rechecked on subsequent cloud loads. If none of the six applies, the field stays blank. User-selected manual sources (e.g. CNN/PVR, Jellyfin, Download) are never deleted or overwritten, and can be chosen via **Other source…**. **Hide service** is a persistent manual override. The app's TMDB token remains a server-side Supabase secret.
+
+### Default season for new shows (v0.3.7)
+
+When adding a TVmaze-linked show, Watching selects **Season 1** by default even if later seasons have episodes. The season picker remains available to select any existing season. If the source has no numbered Season 1, the earliest available numbered season is used. This applies **only to new additions**; existing show seasons and watched progress are not changed.

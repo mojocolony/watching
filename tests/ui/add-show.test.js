@@ -67,7 +67,28 @@ test('renders edit sheet with destination and Priya controls', async () => {
   assert.match(html, /data-action="save-edit-show"/);
 });
 
-test('defaults a fetched show to the newest season that actually has episodes', async () => {
+test('new shows default to Season 1 even when Season 2 already has episodes', async () => {
+  const { chooseDefaultSeasonWithEpisodes } = await import('../../src/ui/add-show.js');
+  const seasons = [
+    { sourceSeasonId: 202, seasonNumber: 2 },
+    { sourceSeasonId: 101, seasonNumber: 1 },
+  ];
+  const calls = [];
+  const result = await chooseDefaultSeasonWithEpisodes(seasons, async seasonId => {
+    calls.push(seasonId);
+    return seasonId === 101 ? [{ sourceEpisodeId: 1, episodeNumber: 1, title: 'One' }]
+      : [{ sourceEpisodeId: 2, episodeNumber: 1, title: 'Two' }];
+  });
+  assert.equal(result.season.seasonNumber, 1);
+  assert.equal(result.episodes.length, 1);
+  assert.deepEqual(calls, [101]);
+  const html = renderFetchedSetup({ sourceShowId: 12, title: 'The Paper' }, seasons, result.season.sourceSeasonId);
+  assert.match(html, /value="101" selected>Season 1/);
+  assert.match(html, /value="202">Season 2/);
+  assert.ok(html.indexOf('Season 1') < html.indexOf('Season 2'));
+});
+
+test('Season 1 remains the default even before its episodes are announced', async () => {
   const { chooseDefaultSeasonWithEpisodes } = await import('../../src/ui/add-show.js');
   const seasons = [
     { sourceSeasonId: 101, seasonNumber: 1 },
@@ -76,21 +97,29 @@ test('defaults a fetched show to the newest season that actually has episodes', 
   const calls = [];
   const result = await chooseDefaultSeasonWithEpisodes(seasons, async seasonId => {
     calls.push(seasonId);
-    return seasonId === 202 ? [] : [{ sourceEpisodeId: 1, episodeNumber: 1, title: 'One' }];
+    return [];
   });
   assert.equal(result.season.seasonNumber, 1);
-  assert.equal(result.episodes.length, 1);
-  assert.deepEqual(calls, [202, 101]);
+  assert.deepEqual(result.episodes, []);
+  assert.deepEqual(calls, [101]);
 });
 
-test('falls back to the newest announced season when no season has episode information yet', async () => {
+test('if Season 1 is missing, new shows default to the earliest numbered season', async () => {
   const { chooseDefaultSeasonWithEpisodes } = await import('../../src/ui/add-show.js');
-  const seasons = [
-    { sourceSeasonId: 101, seasonNumber: 1 },
-    { sourceSeasonId: 202, seasonNumber: 2 },
-  ];
-  const result = await chooseDefaultSeasonWithEpisodes(seasons, async () => []);
-  assert.equal(result.season.seasonNumber, 2);
+  const result = await chooseDefaultSeasonWithEpisodes([
+    { sourceSeasonId: 505, seasonNumber: 5 },
+    { sourceSeasonId: 303, seasonNumber: 3 },
+  ], async seasonId => [{ sourceEpisodeId: seasonId, episodeNumber: 1, title: 'One' }]);
+  assert.equal(result.season.seasonNumber, 3);
+  assert.equal(result.episodes[0].sourceEpisodeId, 303);
+});
+
+test('no available seasons produces no selection and no episode request', async () => {
+  const { chooseDefaultSeasonWithEpisodes } = await import('../../src/ui/add-show.js');
+  const result = await chooseDefaultSeasonWithEpisodes([], () => {
+    throw new Error('Should never request episodes without a season');
+  });
+  assert.equal(result.season, null);
   assert.deepEqual(result.episodes, []);
 });
 

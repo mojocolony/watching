@@ -14,7 +14,7 @@ export function renderSearchResults(results) {
 export function renderFetchedSetup(result, seasons, selectedSeasonId = null) {
   const options = (seasons ?? [])
     .slice()
-    .sort((a, b) => b.seasonNumber - a.seasonNumber)
+    .sort((a, b) => a.seasonNumber - b.seasonNumber)
     .map(season => `<option value="${escapeHtml(season.sourceSeasonId)}"${Number(season.sourceSeasonId) === Number(selectedSeasonId) ? ' selected' : ''}>Season ${escapeHtml(season.seasonNumber)}</option>`)
     .join('');
 
@@ -39,13 +39,13 @@ export function renderFetchedSetup(result, seasons, selectedSeasonId = null) {
 
 
 export async function chooseDefaultSeasonWithEpisodes(seasons, getSeasonEpisodes) {
-  const ordered = (seasons ?? []).slice().sort((a, b) => Number(b.seasonNumber) - Number(a.seasonNumber));
+  const ordered = (seasons ?? []).slice().sort((a, b) => Number(a.seasonNumber) - Number(b.seasonNumber));
   if (!ordered.length) return { season: null, episodes: [] };
-  for (const season of ordered) {
-    const episodes = await getSeasonEpisodes(season.sourceSeasonId);
-    if (episodes?.length) return { season, episodes };
-  }
-  return { season: ordered[0], episodes: [] };
+  // A newly tracked show starts at Season 1, irrespective of newer releases.
+  // If a provider has no numbered Season 1, use its earliest listed season.
+  const season = ordered.find(item => Number(item.seasonNumber) === 1) ?? ordered[0];
+  const episodes = await getSeasonEpisodes(season.sourceSeasonId);
+  return { season, episodes: episodes ?? [] };
 }
 
 export function buildFetchedShow({ result, season, episodes, section, withPriya, sortOrder, id, totalSeasons = null }) {
