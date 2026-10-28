@@ -67,7 +67,7 @@ test('menu contains archive font controls sign out and version but no sorting', 
   assert.match(html, /data-theme-mode="system"/);
   assert.match(html, /data-theme-mode="light"/);
   assert.match(html, /data-theme-mode="dark"/);
-  assert.match(html, /v0\.3\.4/);
+  assert.match(html, /v0\.3\.5/);
   assert.doesNotMatch(html, /Alphabetical|Sort/);
 });
 
@@ -159,4 +159,11 @@ test('With Priya filter is explicitly identified with Show all control', () => {
   assert.match(html, /With Priya filter is on/);
   assert.match(html, /data-action="toggle-priya-filter">Show all shows/);
   assert.doesNotMatch(renderAppMarkup(state), /class="filter-notice"/);
+});
+
+test('legacy Apple TV+ manual override maps to current Apple TV menu choice', () => {
+  const show = { ...state.shows[0], watchProvider: 'Apple TV+', watchProviderManual: true };
+  const html = renderAppMarkup({ ...state, shows: [show], sheet: 'provider', providerShowId: show.id });
+  assert.match(html, /value="Apple TV" selected>Apple TV<\/option>/);
+  assert.doesNotMatch(html, /<option value="Apple TV\+"/);
 });
