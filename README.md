@@ -2,9 +2,9 @@
 
 Watching is a deliberately lightweight personal TV-progress tracker. It keeps three manually ordered lists, **Now Watching**, **Queued Up**, and **Someday**, with collapsible episode lists, watched progress, runtimes, a “with Priya” marker/filter, season completion, and Archive.
 
-Version: **0.3.7**
+Version: **0.3.8**
 
-## What v0.3.7 does
+## What v0.3.8 does
 
 - Manually ordered **Now Watching**, **Queued Up**, and **Someday** sections
 - Drag shows within a section or between sections, including into an empty or collapsed Someday list (drop on its heading)
@@ -157,3 +157,7 @@ Automatic Canadian streaming availability and the service picker are restricted 
 ### Default season for new shows (v0.3.7)
 
 When adding a TVmaze-linked show, Watching selects **Season 1** by default even if later seasons have episodes. The season picker remains available to select any existing season. If the source has no numbered Season 1, the earliest available numbered season is used. This applies **only to new additions**; existing show seasons and watched progress are not changed.
+
+### Verified season-specific availability (v0.3.8)
+
+Canadian series-level TMDB/JustWatch availability can omit direct streaming even when the broadcaster explicitly schedules a season. The Edge Function supports a narrowly scoped, documented, verified-season fallback. The Paper (TVmaze 84611), Season 1, is verified on Crave in Bell Media's September 2026 Crave streaming overview; Season 2 is **not** inferred from that listing. The original six-service allowlist remains unchanged, and generic Amazon Channel labels remain excluded. Automatic provider labels are rechecked (and cleared if needed) when switching seasons; explicit user overrides remain unchanged. The lookup source is `supabase/functions/watching-providers/official-overrides.js`.
