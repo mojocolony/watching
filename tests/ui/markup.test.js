@@ -102,7 +102,7 @@ test('iPhone metadata places the provider immediately after compact episode prog
   const html = renderShowRow({ ...show, watchProvider: 'Disney Plus' });
   assert.match(html, /class="show-meta-full">Season 6\/7 · Episode 1\/2 ·/);
   assert.match(html, /class="show-progress-mobile">S6\/7 · E1\/2<\/span>/);
-  assert.match(html, /class="show-provider show-provider-mobile" title="Disney+"> · Disney\+<\/span>/);
+  assert.match(html, /class="show-provider show-provider-mobile" title="Disney\+"> · Disney\+<\/span>/);
 });
 
 test('iPhone progress handles episodes not announced without inventing a count', () => {
