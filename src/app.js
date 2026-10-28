@@ -6,7 +6,7 @@ import { isSeasonComplete } from './domain/shows.js';
 import { tvmaze } from './services/tvmaze.js';
 import { getCurrentUser, signIn, signOut } from './services/auth.js';
 import { getSupabaseClient } from './services/supabase.js';
-import { displayProviderName } from './services/provider-names.js';
+import { displayProviderName, subscribedProviderName } from './services/provider-names.js';
 import { refreshTrackedMetadata } from './services/metadata-refresh.js';
 import { createRepository } from './data/repository.js';
 import { clearCachedSnapshot, readCachedSnapshot, writeCachedSnapshot } from './storage/cache.js';
@@ -324,6 +324,15 @@ async function restoreArchivedShow(showId) {
   }
 }
 
+root.addEventListener('change', event => {
+  if (event.target.dataset.field !== 'watch-provider') return;
+  const other = root.querySelector('[data-field="watch-provider-other"]');
+  if (other) {
+    other.hidden = event.target.value !== '__other__';
+    if (!other.hidden) other.focus();
+  }
+});
+
 root.addEventListener('input', event => {
   if (event.target.dataset.field !== 'watch-provider-other') return;
   const select = root.querySelector('[data-field="watch-provider"]');
@@ -513,9 +522,13 @@ function openWatchProvider(showId) {
   render();
   const select = root.querySelector('[data-field="watch-provider"]');
   if (select) {
-    const provider = show.watchProviderManual ? displayProviderName(show.watchProvider) : '__auto__';
+    const provider = show.watchProviderManual
+      ? (show.watchProvider ? displayProviderName(show.watchProvider) : '__hide__')
+      : '__auto__';
     const available = [...select.options].some(option => option.value === provider);
     select.value = available ? provider : '__other__';
+    const other = root.querySelector('[data-field="watch-provider-other"]');
+    if (other) other.hidden = select.value !== '__other__';
   }
 }
 
@@ -525,10 +538,12 @@ async function saveWatchProvider() {
   if (!show) return;
   const selected = root.querySelector('[data-field="watch-provider"]')?.value || '';
   const manual = selected !== '__auto__';
-  const provider = manual ? displayProviderName(selected === '__other__'
-    ? root.querySelector('[data-field="watch-provider-other"]')?.value.trim().slice(0,80)
-    : selected) : (show.watchProviderManual ? null : show.watchProvider);
-  if (manual && !provider) { showToast('Enter a service name.'); return; }
+  const provider = selected === '__hide__' ? null : manual
+    ? displayProviderName(selected === '__other__'
+      ? root.querySelector('[data-field="watch-provider-other"]')?.value.trim().slice(0,80)
+      : selected)
+    : (show.watchProviderManual ? null : show.watchProvider);
+  if (manual && selected !== '__hide__' && !provider) { showToast('Enter a source name.'); return; }
   try {
     if (repository) await repository.updateShow(show.id, { watchProvider: provider, watchProviderManual: manual });
   } catch { showToast('Could not save the service.'); return; }
@@ -545,7 +560,7 @@ async function saveWatchProvider() {
 async function backfillWatchProviders() {
   if (providerRefreshPromise) return providerRefreshPromise;
   const userId = currentUser?.id;
-  const candidates = state.shows.filter(show => show.source === 'tvmaze' && !show.watchProviderManual && !show.watchProvider).map(show => show.id);
+  const candidates = state.shows.filter(show => show.source === 'tvmaze' && !show.watchProviderManual && !subscribedProviderName(show.watchProvider)).map(show => show.id);
   const run = (async () => {
     for (const showId of candidates) {
       if (!repository || currentUser?.id !== userId) break;
@@ -567,10 +582,10 @@ async function refreshWatchProvider(showId) {
       console.warn('Watching: provider lookup unavailable', data?.error || error?.message || 'Unknown error');
       return;
     }
-    const provider = displayProviderName(data?.provider);
-    if (!provider) return;
+    const provider = subscribedProviderName(data?.provider);
+    if (!provider && !show.watchProvider) return;
     const fresh = state.shows.find(item => item.id === showId);
-    if (!fresh || fresh.watchProviderManual) return;
+    if (!fresh || fresh.watchProviderManual || fresh.watchProvider === provider) return;
     await repository.updateShow(showId, { watchProvider: provider, watchProviderManual: false });
     state = { ...state, shows: state.shows.map(item => item.id === showId && !item.watchProviderManual
       ? { ...item, watchProvider: provider } : item) };
