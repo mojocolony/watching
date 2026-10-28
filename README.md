@@ -2,9 +2,9 @@
 
 Watching is a deliberately lightweight personal TV-progress tracker. It keeps three manually ordered lists, **Now Watching**, **Queued Up**, and **Someday**, with collapsible episode lists, watched progress, runtimes, a “with Priya” marker/filter, season completion, and Archive.
 
-Version: **0.3.5**
+Version: **0.3.6**
 
-## What v0.3.5 does
+## What v0.3.6 does
 
 - Manually ordered **Now Watching**, **Queued Up**, and **Someday** sections
 - Drag shows within a section or between sections, including into an empty or collapsed Someday list (drop on its heading)
@@ -149,3 +149,7 @@ No posters, discovery, ratings, reviews, recommendations, streaming-service trac
 ### Provider lookup and Apple TV naming (v0.3.5)
 
 Apple TV (formerly Apple TV+) is the canonical label in the UI and provider picker. Existing manually set Apple TV+ choices remain manual and display as Apple TV without modifying their stored override. Newly added TVmaze-linked shows check Canadian streaming availability immediately. If TMDB has no Canadian subscription listing, the Supabase Edge Function may fall back to TVmaze only for verified Apple TV original-channel programmes; other networks are not inferred to be available in Canada. The deployed Edge Function source is at `supabase/functions/watching-providers/index.ts` and its TMDB credential stays server-side.
+
+### Streaming providers (v0.3.6)
+
+Automatic Canadian streaming availability and the service picker are restricted to **Netflix, Crave, Prime, Paramount+, Disney+, AppleTV**. Only direct included-subscription providers are eligible; paid add-on channels such as StackTV Amazon Channel and BritBox Amazon Channel are excluded, not relabeled as Prime. The iPhone and desktop labels use the same six names. Previously saved automatic out-of-list providers are hidden immediately and rechecked on subsequent cloud loads. If none of the six applies, the field stays blank. User-selected manual sources (e.g. CNN/PVR, Jellyfin, Download) are never deleted or overwritten, and can be chosen via **Other source…**. **Hide service** is a persistent manual override. The app's TMDB token remains a server-side Supabase secret.
