@@ -6,6 +6,7 @@ import { isSeasonComplete } from './domain/shows.js';
 import { tvmaze } from './services/tvmaze.js';
 import { getCurrentUser, signIn, signOut } from './services/auth.js';
 import { getSupabaseClient } from './services/supabase.js';
+import { displayProviderName } from './services/provider-names.js';
 import { refreshTrackedMetadata } from './services/metadata-refresh.js';
 import { createRepository } from './data/repository.js';
 import { clearCachedSnapshot, readCachedSnapshot, writeCachedSnapshot } from './storage/cache.js';
@@ -403,6 +404,7 @@ async function saveFetchedShow() {
     writeCachedSnapshot({ shows: state.shows, cachedAt: new Date().toISOString() });
     render();
     showToast(`${newShow.title} added.`);
+    if (newShow.source === 'tvmaze') void refreshWatchProvider(newShow.id);
   } catch {
     if (button) { button.disabled = false; button.textContent = 'Add show'; }
     showToast('Could not load that season.');
@@ -510,7 +512,11 @@ function openWatchProvider(showId) {
   state = { ...state, sheet: 'provider', providerShowId: showId, showMenuId: null };
   render();
   const select = root.querySelector('[data-field="watch-provider"]');
-  if (select) select.value = show.watchProviderManual ? (show.watchProvider || '') : '__auto__';
+  if (select) {
+    const provider = show.watchProviderManual ? displayProviderName(show.watchProvider) : '__auto__';
+    const available = [...select.options].some(option => option.value === provider);
+    select.value = available ? provider : '__other__';
+  }
 }
 
 async function saveWatchProvider() {
@@ -519,7 +525,7 @@ async function saveWatchProvider() {
   if (!show) return;
   const selected = root.querySelector('[data-field="watch-provider"]')?.value || '';
   const manual = selected !== '__auto__';
-  const provider = manual ? (selected === '__other__'
+  const provider = manual ? displayProviderName(selected === '__other__'
     ? root.querySelector('[data-field="watch-provider-other"]')?.value.trim().slice(0,80)
     : selected) : (show.watchProviderManual ? null : show.watchProvider);
   if (manual && !provider) { showToast('Enter a service name.'); return; }
@@ -556,12 +562,12 @@ async function refreshWatchProvider(showId) {
   if (!show || show.watchProviderManual || show.source !== 'tvmaze') return;
   try {
     const client = await getSupabaseClient();
-    const { data, error } = await client.functions.invoke('watching-providers', { body: { title: show.title } });
+    const { data, error } = await client.functions.invoke('watching-providers', { body: { title: show.title, sourceShowId: show.sourceShowId } });
     if (error || data?.error) {
       console.warn('Watching: provider lookup unavailable', data?.error || error?.message || 'Unknown error');
       return;
     }
-    const provider = data?.provider;
+    const provider = displayProviderName(data?.provider);
     if (!provider) return;
     const fresh = state.shows.find(item => item.id === showId);
     if (!fresh || fresh.watchProviderManual) return;
