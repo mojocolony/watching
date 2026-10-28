@@ -1,7 +1,7 @@
 import { APP_VERSION } from '../config.js';
 import { renderSection, escapeHtml } from './markup.js';
 import { icon } from './icons.js';
-import { displayProviderName } from '../services/provider-names.js';
+import { displayProviderName, STREAMING_SERVICES } from '../services/provider-names.js';
 import { renderCompletionSheet } from './completion.js';
 import { renderEditShowSheet } from './add-show.js';
 
@@ -113,9 +113,9 @@ function renderEditSheet(state) {
 function renderProviderSheet(state) {
   const show = state.shows.find(item => item.id === state.providerShowId);
   if (!show) return '';
-  const options = ['Netflix', 'Prime Video', 'Apple TV', 'Crave', 'Disney+', 'CBC Gem', 'Global TV', 'CTV', 'Citytv', 'Paramount+', 'Hayu', 'Jellyfin', 'Download'];
-  const selected = show.watchProviderManual ? displayProviderName(show.watchProvider) : '__auto__';
-  const isOther = selected && !options.includes(selected) && selected !== '__auto__';
+  const options = STREAMING_SERVICES;
+  const selected = show.watchProviderManual ? (show.watchProvider ? displayProviderName(show.watchProvider) : '__hide__') : '__auto__';
+  const isOther = selected && !options.includes(selected) && !['__auto__', '__hide__'].includes(selected);
   return `<div class="sheet-scrim" data-action="close-sheet"></div>
     <section class="sheet" role="dialog" aria-modal="true" aria-label="Streaming service or source">
       <div class="sheet-header"><h2>Watching on</h2><button class="icon-button" type="button" data-action="close-sheet" aria-label="Close">×</button></div>
@@ -123,12 +123,12 @@ function renderProviderSheet(state) {
       <label class="field-label" for="watch-provider-select">Streaming service / source</label>
       <select id="watch-provider-select" class="text-field" data-field="watch-provider">
         <option value="__auto__" ${selected === '__auto__' ? 'selected' : ''}>Automatic (Canada)</option>
-        <option value="" ${selected === '' ? 'selected' : ''}>None</option>
+        <option value="__hide__" ${selected === '__hide__' ? 'selected' : ''}>Hide service</option>
         ${options.map(item => `<option value="${escapeHtml(item)}" ${selected === item ? 'selected' : ''}>${escapeHtml(item)}</option>`).join('')}
-        <option value="__other__" ${isOther ? 'selected' : ''}>Other…</option>
+        <option value="__other__" ${isOther ? 'selected' : ''}>Other source…</option>
       </select>
-      <input class="text-field" data-field="watch-provider-other" placeholder="Other provider" aria-label="Other provider" value="${isOther ? escapeHtml(selected) : ''}">
-      <p class="sheet-kicker">Automatic results use TMDB/JustWatch Canadian availability and may differ by season. Manual choices are retained.</p><button class="primary-button" type="button" data-action="save-watch-provider">Save</button>
+      <input class="text-field provider-other-field" data-field="watch-provider-other" placeholder="e.g. CNN/PVR or Jellyfin" aria-label="Other source" value="${isOther ? escapeHtml(selected) : ''}" ${isOther ? '' : 'hidden'}>
+      <p class="sheet-kicker">Automatic results include only your six streaming services in Canada. Other sources and manual choices are retained.</p><button class="primary-button" type="button" data-action="save-watch-provider">Save</button>
     </section>`;
 }
 

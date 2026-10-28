@@ -102,7 +102,7 @@ test('iPhone metadata places the provider immediately after compact episode prog
   const html = renderShowRow({ ...show, watchProvider: 'Disney Plus' });
   assert.match(html, /class="show-meta-full">Season 6\/7 · Episode 1\/2 ·/);
   assert.match(html, /class="show-progress-mobile">S6\/7 · E1\/2<\/span>/);
-  assert.match(html, /class="show-provider show-provider-mobile" title="Disney Plus"> · Disney\+<\/span>/);
+  assert.match(html, /class="show-provider show-provider-mobile" title="Disney\+"> · Disney\+<\/span>/);
 });
 
 test('iPhone progress handles episodes not announced without inventing a count', () => {
@@ -124,8 +124,22 @@ test('iPhone without a service has no orphan provider separator', () => {
   assert.doesNotMatch(html, /class="show-provider show-provider-mobile"/);
 });
 
-test('legacy Apple TV+ provider displays as Apple TV on desktop and mobile', () => {
+test('legacy Apple TV+ provider displays as AppleTV on desktop and mobile', () => {
   const html = renderShowRow({ ...show, watchProvider: 'Apple TV+' });
-  assert.match(html, /class="show-provider">Apple TV<\/span>/);
-  assert.match(html, /class="show-provider show-provider-mobile" title="Apple TV\+"> · Apple TV<\/span>/);
+  assert.match(html, /class="show-provider">AppleTV<\/span>/);
+  assert.match(html, /class="show-provider show-provider-mobile" title="AppleTV"> · AppleTV<\/span>/);
+});
+
+test('unlisted automatic services do not render on phone or desktop', () => {
+  const html = renderShowRow({ ...show, watchProvider: 'StackTV Amazon Channel', watchProviderManual: false });
+  assert.doesNotMatch(html, /class="show-provider"/);
+  assert.doesNotMatch(html, /class="show-provider show-provider-mobile"/);
+});
+
+test('manual Jellyfin and CNN/PVR sources remain visible', () => {
+  for (const source of ['Jellyfin', 'CNN/PVR']) {
+    const html = renderShowRow({ ...show, watchProvider: source, watchProviderManual: true });
+    assert.match(html, /class="show-provider"/);
+    assert.ok(html.includes(source));
+  }
 });

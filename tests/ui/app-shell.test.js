@@ -67,7 +67,7 @@ test('menu contains archive font controls sign out and version but no sorting', 
   assert.match(html, /data-theme-mode="system"/);
   assert.match(html, /data-theme-mode="light"/);
   assert.match(html, /data-theme-mode="dark"/);
-  assert.match(html, /v0\.3\.5/);
+  assert.match(html, /v0\.3\.6/);
   assert.doesNotMatch(html, /Alphabetical|Sort/);
 });
 
@@ -161,9 +161,31 @@ test('With Priya filter is explicitly identified with Show all control', () => {
   assert.doesNotMatch(renderAppMarkup(state), /class="filter-notice"/);
 });
 
-test('legacy Apple TV+ manual override maps to current Apple TV menu choice', () => {
+test('legacy Apple TV+ manual override maps to selected AppleTV choice', () => {
   const show = { ...state.shows[0], watchProvider: 'Apple TV+', watchProviderManual: true };
   const html = renderAppMarkup({ ...state, shows: [show], sheet: 'provider', providerShowId: show.id });
-  assert.match(html, /value="Apple TV" selected>Apple TV<\/option>/);
+  assert.match(html, /value="AppleTV" selected>AppleTV<\/option>/);
   assert.doesNotMatch(html, /<option value="Apple TV\+"/);
+});
+
+test('streaming source picker lists only six services plus controls', () => {
+  const html = renderAppMarkup({ ...state, sheet: 'provider', providerShowId: 'slow-horses' });
+  for (const name of ['Netflix', 'Crave', 'Prime', 'Paramount+', 'Disney+', 'AppleTV']) {
+    assert.ok(html.includes('value="' + name + '"'), name);
+  }
+  for (const name of ['Hayu', 'Global TV', 'CBC Gem', 'Paramount Plus', 'Prime Video', 'Apple TV+']) {
+    assert.ok(!html.includes('<option value="' + name + '"'), name);
+  }
+  assert.match(html, /value="__auto__"/);
+  assert.match(html, /value="__other__"/);
+  assert.match(html, /value="__hide__"/);
+  assert.match(html, /data-field="watch-provider-other"[^>]*hidden>/);
+});
+
+test('manual external source is retained in Other source field', () => {
+  const show = { ...state.shows[0], watchProvider: 'CNN/PVR', watchProviderManual: true };
+  const html = renderAppMarkup({ ...state, shows: [show], sheet: 'provider', providerShowId: show.id });
+  assert.match(html, /value="__other__" selected/);
+  assert.match(html, /data-field="watch-provider-other"[^>]*value="CNN\/PVR"/);
+  assert.doesNotMatch(html, /value="CNN\/PVR" hidden/);
 });
