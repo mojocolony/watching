@@ -507,3 +507,6 @@ button:focus-visible, input:focus-visible {
 .edit-show-title { margin: -4px 0 18px; color: var(--text); font-size: .94em; }
 
 .episode-empty { margin: 0; padding: 0.55rem 0 0.9rem; color: var(--muted); font-size: var(--meta-size); }
+
+/* Keep the optional custom-source input out of the compact selector until requested. */
+.provider-other-field[hidden] { display: none; }
