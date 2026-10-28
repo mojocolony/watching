@@ -1,4 +1,4 @@
-const CACHE = 'watching-shell-v11';
+const CACHE = 'watching-shell-v12';
 const SHELL = [
   './',
   './index.html',
@@ -13,6 +13,7 @@ const SHELL = [
   './src/storage/cache.js',
   './src/storage/preferences.js',
   './src/services/tvmaze.js',
+  './src/services/provider-names.js',
   './src/services/auth.js',
   './src/services/supabase.js',
   './src/services/metadata-refresh.js',
