@@ -287,8 +287,15 @@ async function startCompletionNextSeason(section) {
   try {
     const episodes = await tvmaze.getSeasonEpisodes(season.sourceSeasonId);
     const sortOrder = nextSortOrder(section);
-    if (repository) await repository.addSeason(show, season, episodes, section);
-    const nextShow = { ...startNextSeasonLocally(show, { season, episodes, section }), sortOrder };
+    if (repository) {
+      await repository.addSeason(show, season, episodes, section);
+      if (!show.watchProviderManual) await repository.updateShow(show.id, { watchProvider: null });
+    }
+    const nextShow = {
+      ...startNextSeasonLocally(show, { season, episodes, section }),
+      sortOrder,
+      ...(!show.watchProviderManual ? { watchProvider: null } : {}),
+    };
     state = {
       ...state,
       shows: state.shows.map(item => item.id === show.id ? nextShow : item),
@@ -297,6 +304,7 @@ async function startCompletionNextSeason(section) {
     writeCachedSnapshot({ shows: state.shows, cachedAt: new Date().toISOString() });
     render();
     showToast(`Season ${season.seasonNumber} added.`);
+    if (!show.watchProviderManual) void refreshWatchProvider(show.id);
   } catch {
     showToast('Could not load the next season.');
   }
@@ -575,9 +583,12 @@ async function refreshWatchProvider(showId) {
   if (!repository) return;
   const show = state.shows.find(item => item.id === showId);
   if (!show || show.watchProviderManual || show.source !== 'tvmaze') return;
+  const requestedSeason = Number(show.currentSeason);
   try {
     const client = await getSupabaseClient();
-    const { data, error } = await client.functions.invoke('watching-providers', { body: { title: show.title, sourceShowId: show.sourceShowId } });
+    const { data, error } = await client.functions.invoke('watching-providers', {
+      body: { title: show.title, sourceShowId: show.sourceShowId, seasonNumber: requestedSeason },
+    });
     if (error || data?.error) {
       console.warn('Watching: provider lookup unavailable', data?.error || error?.message || 'Unknown error');
       return;
@@ -585,7 +596,7 @@ async function refreshWatchProvider(showId) {
     const provider = subscribedProviderName(data?.provider);
     if (!provider && !show.watchProvider) return;
     const fresh = state.shows.find(item => item.id === showId);
-    if (!fresh || fresh.watchProviderManual || fresh.watchProvider === provider) return;
+    if (!fresh || fresh.watchProviderManual || Number(fresh.currentSeason) !== requestedSeason || fresh.watchProvider === provider) return;
     await repository.updateShow(showId, { watchProvider: provider, watchProviderManual: false });
     state = { ...state, shows: state.shows.map(item => item.id === showId && !item.watchProviderManual
       ? { ...item, watchProvider: provider } : item) };
@@ -645,7 +656,11 @@ async function saveEditShow() {
       if (section !== show.section) {
         await repository.saveShowPlacement(nextShows.filter(item => ['watching', 'queued', 'someday'].includes(item.section)));
       }
-      await repository.updateShow(show.id, { title, withPriya });
+      await repository.updateShow(show.id, {
+        title,
+        withPriya,
+        ...(seasonChanged && !show.watchProviderManual ? { watchProvider: null } : {}),
+      });
       if (seasonChanged) {
         nextShows = await repository.loadShows(currentUser.id);
       } else {
@@ -654,7 +669,12 @@ async function saveEditShow() {
     } else {
       nextShows = nextShows.map(item => {
         if (item.id !== show.id) return item;
-        const base = { ...item, title, withPriya };
+        const base = {
+          ...item,
+          title,
+          withPriya,
+          ...(seasonChanged && !item.watchProviderManual ? { watchProvider: null } : {}),
+        };
         if (!seasonChanged) return base;
         const seasonSummary = {
           id: null,
@@ -689,6 +709,7 @@ async function saveEditShow() {
   writeCachedSnapshot({ shows: state.shows, cachedAt: new Date().toISOString() });
   render();
   showToast('Show updated.');
+  if (seasonChanged && !show.watchProviderManual) void refreshWatchProvider(show.id);
 }
 async function toggleShowPriya(showId) {
   if (!ensureWritable()) return;
