@@ -1,3 +1,5 @@
+import { officialSeasonProvider } from "./official-overrides.js";
+
 const cors = { "Access-Control-Allow-Origin": "https://watching.mojocolony.com", "Access-Control-Allow-Headers": "authorization, apikey, content-type, x-client-info, x-supabase-api-version, x-region, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version", "Access-Control-Allow-Methods": "POST, OPTIONS" };
 const json = (data: unknown, status = 200) => new Response(JSON.stringify(data), {status,headers: {...cors,"Content-Type":"application/json"}});
 Deno.serve(async req => {
@@ -20,15 +22,21 @@ Deno.serve(async req => {
   if (!access.ok || !(await access.json()).length) return json({error:"Watching access required"},403);
   let title = "";
   let sourceShowId = 0;
+  let seasonNumber = 0;
   try {
     const body = await req.json();
     title = String(body.title || "").trim().slice(0, 150);
     sourceShowId = Number(body.sourceShowId);
+    seasonNumber = Number(body.seasonNumber);
   } catch {}
   if (!title) return json({error:"Title required"},400);
   const api = "https://api.themoviedb.org/3";
   const headers = {Authorization:"Bearer " + secret,Accept:"application/json"};
   const norm = (v: string) => String(v || "").trim().toLocaleLowerCase("en-CA");
+  // Prefer a season-specific Canadian broadcaster listing when TMDB's
+  // series-level listing omits a directly subscribed service.
+  const verified = officialSeasonProvider({ title, sourceShowId, seasonNumber });
+  if (verified) return json({ provider: verified, attribution: "Bell Media", seasonNumber });
   const eligible = new Map<string, string>([
     ["netflix", "Netflix"], ["netflix standard with ads", "Netflix"],
     ["crave", "Crave"],
