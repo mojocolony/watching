@@ -1,5 +1,6 @@
 import { getSeasonProgress } from '../domain/shows.js';
 import { icon } from './icons.js';
+import { displayProviderName } from '../services/provider-names.js';
 
 export function escapeHtml(value) {
   return String(value ?? '')
@@ -39,10 +40,6 @@ function showProgressMobile(show) {
   return `S${escapeHtml(show.currentSeason)}/${escapeHtml(seasons)} · E${escapeHtml(watched)}/${escapeHtml(total)}`;
 }
 
-function mobileProviderName(provider) {
-  return { 'Disney Plus': 'Disney+', 'Paramount Plus': 'Paramount+', 'Apple TV Plus': 'Apple TV+' }[provider] ?? provider;
-}
-
 function renderShowActions(show) {
   const priyaLabel = show.withPriya ? 'Remove Priya marker' : 'Mark With Priya';
   const sections = [['watching', 'Now Watching'], ['queued', 'Queued Up'], ['someday', 'Someday']];
@@ -74,10 +71,10 @@ export function renderShowRow(show, { menuOpen = false } = {}) {
         <span class="show-copy">
           <span class="show-title-line"><span class="show-title">${escapeHtml(show.title)}</span>${priya}</span>
           <span class="show-meta">
-            <span class="show-meta-full">${showProgress(show)}${show.watchProvider ? ` · <span class="show-provider">${escapeHtml(show.watchProvider)}</span>` : ""}</span>
+            <span class="show-meta-full">${showProgress(show)}${show.watchProvider ? ` · <span class="show-provider">${escapeHtml(displayProviderName(show.watchProvider))}</span>` : ""}</span>
             <span class="show-meta-mobile">
               <span class="show-progress-mobile">${showProgressMobile(show)}</span>
-              ${show.watchProvider ? `<span class="show-provider show-provider-mobile" title="${escapeHtml(show.watchProvider)}"> · ${escapeHtml(mobileProviderName(show.watchProvider))}</span>` : ""}
+              ${show.watchProvider ? `<span class="show-provider show-provider-mobile" title="${escapeHtml(show.watchProvider)}"> · ${escapeHtml(displayProviderName(show.watchProvider))}</span>` : ""}
             </span>
           </span>
         </span>
