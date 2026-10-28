@@ -123,3 +123,9 @@ test('iPhone without a service has no orphan provider separator', () => {
   assert.match(html, /class="show-progress-mobile">S6\/7 · E1\/2<\/span>/);
   assert.doesNotMatch(html, /class="show-provider show-provider-mobile"/);
 });
+
+test('legacy Apple TV+ provider displays as Apple TV on desktop and mobile', () => {
+  const html = renderShowRow({ ...show, watchProvider: 'Apple TV+' });
+  assert.match(html, /class="show-provider">Apple TV<\/span>/);
+  assert.match(html, /class="show-provider show-provider-mobile" title="Apple TV\+"> · Apple TV<\/span>/);
+});
