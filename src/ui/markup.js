@@ -1,6 +1,6 @@
 import { getSeasonProgress } from '../domain/shows.js';
 import { icon } from './icons.js';
-import { displayProviderName } from '../services/provider-names.js';
+import { visibleProviderForShow } from '../services/provider-names.js';
 
 export function escapeHtml(value) {
   return String(value ?? '')
@@ -60,6 +60,7 @@ function renderShowActions(show) {
 export function renderShowRow(show, { menuOpen = false } = {}) {
   const priya = show.withPriya ? `<span class="priya-marker" title="With Priya">${icon('users', { size: 18 })}</span>` : '';
   const expanded = show.expanded === true;
+  const visibleProvider = visibleProviderForShow(show);
   const episodes = expanded
     ? ((show.episodes ?? []).length
       ? `<ol class="episode-list">${(show.episodes ?? []).map(ep => renderEpisodeRow(ep, show.id)).join('')}</ol>`
@@ -71,10 +72,10 @@ export function renderShowRow(show, { menuOpen = false } = {}) {
         <span class="show-copy">
           <span class="show-title-line"><span class="show-title">${escapeHtml(show.title)}</span>${priya}</span>
           <span class="show-meta">
-            <span class="show-meta-full">${showProgress(show)}${show.watchProvider ? ` · <span class="show-provider">${escapeHtml(displayProviderName(show.watchProvider))}</span>` : ""}</span>
+            <span class="show-meta-full">${showProgress(show)}${visibleProvider ? ` · <span class="show-provider">${escapeHtml(visibleProvider)}</span>` : ""}</span>
             <span class="show-meta-mobile">
               <span class="show-progress-mobile">${showProgressMobile(show)}</span>
-              ${show.watchProvider ? `<span class="show-provider show-provider-mobile" title="${escapeHtml(show.watchProvider)}"> · ${escapeHtml(displayProviderName(show.watchProvider))}</span>` : ""}
+              ${visibleProvider ? `<span class="show-provider show-provider-mobile" title="${escapeHtml(visibleProvider)}"> · ${escapeHtml(visibleProvider)}</span>` : ""}
             </span>
           </span>
         </span>
