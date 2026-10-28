@@ -2,9 +2,9 @@
 
 Watching is a deliberately lightweight personal TV-progress tracker. It keeps three manually ordered lists, **Now Watching**, **Queued Up**, and **Someday**, with collapsible episode lists, watched progress, runtimes, a “with Priya” marker/filter, season completion, and Archive.
 
-Version: **0.3.4**
+Version: **0.3.5**
 
-## What v0.3.4 does
+## What v0.3.5 does
 
 - Manually ordered **Now Watching**, **Queued Up**, and **Someday** sections
 - Drag shows within a section or between sections, including into an empty or collapsed Someday list (drop on its heading)
@@ -145,3 +145,7 @@ After creating the repository:
 ## Deliberately excluded from v0.3.0
 
 No posters, discovery, ratings, reviews, recommendations, streaming-service tracking, notifications, watch-time statistics, or alternative sort modes.
+
+### Provider lookup and Apple TV naming (v0.3.5)
+
+Apple TV (formerly Apple TV+) is the canonical label in the UI and provider picker. Existing manually set Apple TV+ choices remain manual and display as Apple TV without modifying their stored override. Newly added TVmaze-linked shows check Canadian streaming availability immediately. If TMDB has no Canadian subscription listing, the Supabase Edge Function may fall back to TVmaze only for verified Apple TV original-channel programmes; other networks are not inferred to be available in Canada. The deployed Edge Function source is at `supabase/functions/watching-providers/index.ts` and its TMDB credential stays server-side.
