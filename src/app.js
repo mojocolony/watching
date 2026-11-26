@@ -975,10 +975,16 @@ async function refreshCloudMetadata() {
   if (!repository || !state.shows.length) return;
   try {
     const needsSynopsisBackfill = globalThis.localStorage?.getItem(`watching:synopses-v1:${currentUser?.id}`) !== '1';
+    const fullRefreshKey = `watching:full-metadata-checked-at:${currentUser?.id}`;
+    const lastFullRefresh = globalThis.localStorage?.getItem(fullRefreshKey);
+    const fullRefreshTime = lastFullRefresh ? new Date(lastFullRefresh).getTime() : NaN;
+    const needsFullRefresh = needsSynopsisBackfill || !Number.isFinite(fullRefreshTime)
+      || Date.now() - fullRefreshTime >= 24 * 60 * 60 * 1000;
     const sourceShows = state.shows;
     const result = await refreshTrackedMetadata({
       shows: sourceShows,
-      lastCheckedAt: needsSynopsisBackfill ? null : lastMetadataCheckedAt,
+      lastCheckedAt: needsFullRefresh ? null : lastMetadataCheckedAt,
+      forceFullRefresh: needsFullRefresh,
       tvmaze,
       repository,
       now: new Date(),
@@ -987,9 +993,12 @@ async function refreshCloudMetadata() {
     // do not overwrite the newer list with the older metadata snapshot.
     if (state.shows !== sourceShows) return;
     state = { ...state, shows: result.shows };
-    lastMetadataCheckedAt = result.checkedAt;
-    if (needsSynopsisBackfill) globalThis.localStorage?.setItem(`watching:synopses-v1:${currentUser?.id}`, '1');
-    globalThis.localStorage?.setItem('watching:metadata-checked-at', result.checkedAt);
+    if (!result.failedShowIds?.length) {
+      lastMetadataCheckedAt = result.checkedAt;
+      if (needsSynopsisBackfill) globalThis.localStorage?.setItem(`watching:synopses-v1:${currentUser?.id}`, '1');
+      if (needsFullRefresh) globalThis.localStorage?.setItem(fullRefreshKey, result.checkedAt);
+      globalThis.localStorage?.setItem('watching:metadata-checked-at', result.checkedAt);
+    }
     writeCachedSnapshot({ shows: state.shows, cachedAt: result.checkedAt });
     render();
   } catch {}

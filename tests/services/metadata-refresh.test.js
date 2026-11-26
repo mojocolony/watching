@@ -128,3 +128,80 @@ test('tracked shows missing total season count refresh even when update feed is 
   assert.equal(seasonCalls, 1);
   assert.equal(result.shows[0].totalSeasons, 2);
 });
+
+
+test('daily full refresh recovers episodes even when TVmaze show updates are quiet', async () => {
+  let episodeFetches = 0;
+  let persistedPreviousShow = null;
+  const old = {
+    ...active,
+    sourceShowId: 34685,
+    currentSeason: 4,
+    totalSeasons: 4,
+    seasons: [{ sourceSeasonId: 189204, seasonNumber: 4 }],
+    episodes: [
+      { id: 'first-watched', sourceEpisodeId: 3713680, episodeNumber: 1, title: 'Ring the Bells', watched: true },
+      { id: 'second-watched', sourceEpisodeId: 3801169, episodeNumber: 2, title: 'You Won\'t Hear Me Beg', watched: true },
+    ],
+  };
+  const result = await refreshTrackedMetadata({
+    shows: [old],
+    lastCheckedAt: '2026-11-26T12:00:00Z',
+    now: new Date('2026-11-26T16:00:00Z'),
+    forceFullRefresh: true,
+    tvmaze: {
+      getRecentShowUpdates: async () => ({}),
+      getShowSeasons: async () => [{ sourceSeasonId: 189204, seasonNumber: 4 }],
+      getSeasonEpisodes: async () => {
+        episodeFetches += 1;
+        return Array.from({ length: 8 }, (_, i) => ({
+          sourceEpisodeId: 3800000 + i, episodeNumber: i + 1,
+          title: 'Episode ' + (i + 1), runtimeMinutes: 60, airdate: null,
+        }));
+      },
+    },
+    repository: {
+      mergeFetchedMetadata: async (_id, next, previous) => {
+        persistedPreviousShow = previous;
+        return next;
+      },
+    },
+  });
+  assert.equal(episodeFetches, 1);
+  assert.equal(result.shows[0].episodes.length, 8);
+  assert.deepEqual(result.shows[0].episodes.slice(0, 2).map(ep => ep.watched), [true, true]);
+  assert.equal(result.shows[0].episodes[2].watched, false);
+  assert.equal(persistedPreviousShow, old);
+  assert.deepEqual(result.failedShowIds, []);
+});
+
+test('failed full refresh reports an incomplete pass for a later retry', async () => {
+  const result = await refreshTrackedMetadata({
+    shows: [active],
+    lastCheckedAt: null,
+    forceFullRefresh: true,
+    tvmaze: {
+      getShowSeasons: async () => { throw new Error('Temporary TVmaze failure'); },
+      getSeasonEpisodes: async () => [],
+    },
+  });
+  assert.deepEqual(result.failedShowIds, ['s1']);
+  assert.equal(result.shows[0].episodes.length, 1);
+});
+
+test('a partial upstream episode list cannot shrink an existing season', () => {
+  const show = {
+    ...active,
+    episodes: Array.from({ length: 8 }, (_, i) => ({
+      id: 'ep-' + (i + 1), sourceEpisodeId: 3800000 + i,
+      episodeNumber: i + 1, title: 'Episode ' + (i + 1),
+      watched: i < 2,
+    })),
+  };
+  const merged = mergeTrackedShowMetadata(show,
+    [{ sourceSeasonId: 500, seasonNumber: 1 }],
+    show.episodes.slice(0, 2),
+  );
+  assert.equal(merged.episodes.length, 8);
+  assert.deepEqual(merged.episodes.map(ep => ep.watched), [true, true, false, false, false, false, false, false]);
+});

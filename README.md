@@ -2,9 +2,9 @@
 
 Watching is a deliberately lightweight personal TV-progress tracker. It keeps three manually ordered lists, **Now Watching**, **Queued Up**, and **Someday**, with collapsible episode lists, watched progress, runtimes, a “with Priya” marker/filter, season completion, and Archive.
 
-Version: **0.3.8**
+Version: **0.3.9**
 
-## What v0.3.8 does
+## What v0.3.9 does
 
 - Manually ordered **Now Watching**, **Queued Up**, and **Someday** sections
 - Drag shows within a section or between sections, including into an empty or collapsed Someday list (drop on its heading)
@@ -12,7 +12,7 @@ Version: **0.3.8**
 - Episode number, title, runtime, and expandable full available TVmaze synopsis
 - Tap an episode to toggle watched state; watched episode titles, runtimes, and expandable synopsis labels and text all dim
 - TVmaze show/season/episode lookup with manual fallback; new shows default to Season 1 (or earliest listed season if Season 1 is missing), with other seasons selectable
-- Automatic TVmaze metadata refresh for tracked shows
+- Automatic TVmaze metadata refresh for tracked shows, including daily full checks for episode lists and conflict-safe batching of new episodes
 - Detect newly available seasons for archived shows
 - **Set Aside** in the hamburger menu, above Archive, for paused shows without marking seasons complete
 - Resume a set-aside show with its watched episodes and season progress intact

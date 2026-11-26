@@ -230,7 +230,7 @@ export function createRepository(client) {
       });
     },
 
-    async mergeFetchedMetadata(showId, nextShow) {
+    async mergeFetchedMetadata(showId, nextShow, previousShow = null) {
       await this.updateShow(showId, {
         sourceUpdatedAt: nextShow.sourceUpdatedAt,
         availableSeasonNumber: nextShow.availableSeasonNumber ?? null,
@@ -246,27 +246,51 @@ export function createRepository(client) {
       }, { onConflict: 'show_id,season_number' }).select().single();
       throwIf(error);
 
-      const persistedEpisodes = [];
+      const previousEpisodes = new Map((previousShow?.episodes ?? []).map(episode => [episode.id, episode]));
+      const newEpisodes = [];
       for (const episode of nextShow.episodes ?? []) {
         if (episode.id && /^[0-9a-f-]{36}$/i.test(episode.id)) {
-          const { error: updateError } = await client.from('watching_episodes').update(toMetadataEpisodeUpdate(episode)).eq('id', episode.id);
-          throwIf(updateError);
-          persistedEpisodes.push(episode);
+          const old = previousEpisodes.get(episode.id);
+          const metadataChanged = !old || ['title', 'runtimeMinutes', 'airdate', 'summary'].some(
+            key => (old[key] ?? null) !== (episode[key] ?? null),
+          );
+          if (metadataChanged) {
+            const { error: updateError } = await client.from('watching_episodes')
+              .update(toMetadataEpisodeUpdate(episode)).eq('id', episode.id);
+            throwIf(updateError);
+          }
         } else {
-          const { data: persistedEpisode, error: insertError } = await client.from('watching_episodes').upsert({
-            season_id: dbSeason.id,
-            source_episode_id: episode.sourceEpisodeId ?? null,
-            episode_number: episode.episodeNumber,
-            title: episode.title,
-            runtime_minutes: episode.runtimeMinutes ?? null,
-            airdate: episode.airdate ?? null,
-            summary: episode.summary ?? null,
-            watched: false,
-          }, { onConflict: 'season_id,episode_number' }).select('id').single();
-          throwIf(insertError);
-          persistedEpisodes.push({ ...episode, id: persistedEpisode.id });
+          newEpisodes.push(episode);
         }
       }
+
+      const insertedIdsByNumber = new Map();
+      if (newEpisodes.length) {
+        // One batch instead of an insert for every newly announced episode.
+        // DO NOTHING on duplicates: another device may have inserted one already.
+        // Omitting watched prevents overwriting an existing viewing history.
+        const rows = newEpisodes.map(episode => toSeasonEpisodeUpsert(dbSeason.id, episode));
+        const { data, error: insertError } = await client.from('watching_episodes')
+          .upsert(rows, { onConflict: 'season_id,episode_number', ignoreDuplicates: true, defaultToNull: false })
+          .select('id,episode_number');
+        throwIf(insertError);
+        for (const row of data ?? []) insertedIdsByNumber.set(Number(row.episode_number), row.id);
+
+        if (newEpisodes.some(episode => !insertedIdsByNumber.has(Number(episode.episodeNumber)))) {
+          // If another device won the insert race, get the existing IDs.
+          const { data: existingRows, error: lookupError } = await client.from('watching_episodes')
+            .select('id,episode_number').eq('season_id', dbSeason.id);
+          throwIf(lookupError);
+          for (const row of existingRows ?? []) insertedIdsByNumber.set(Number(row.episode_number), row.id);
+        }
+      }
+
+      const persistedEpisodes = (nextShow.episodes ?? []).map(episode => {
+        if (!newEpisodes.includes(episode)) return episode;
+        const id = insertedIdsByNumber.get(Number(episode.episodeNumber));
+        if (!id) throw new Error(`Could not resolve saved episode ${episode.episodeNumber}`);
+        return { ...episode, id };
+      });
 
       return {
         ...nextShow,

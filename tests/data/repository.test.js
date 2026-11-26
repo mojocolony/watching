@@ -89,3 +89,65 @@ test('maps Set Aside timestamp without modifying episode watched state', () => {
   assert.equal(show.episodes[0].watched, true);
   assert.equal(show.episodes[0].summary, 'Plot');
 });
+
+
+test('metadata persistence batches six newly announced episodes without resetting watched progress', async () => {
+  const { createRepository } = await import('../../src/data/repository.js');
+  const existingId = 'd520ae17-1e87-4264-8f88-74a4122deaaa';
+  const existingEpisode = {
+    id: existingId, episodeNumber: 1, sourceEpisodeId: 3713680,
+    title: 'First', runtimeMinutes: 60, airdate: '2026-11-01', summary: 'Known', watched: true,
+  };
+  const previous = { episodes: [existingEpisode] };
+  const next = {
+    id: 'show', section: 'watching', currentSeason: 4,
+    totalSeasons: 4, sourceUpdatedAt: 123, availableSeasonNumber: null,
+    seasons: [{ seasonNumber: 4, sourceSeasonId: 189204 }],
+    episodes: [
+      { ...existingEpisode },
+      ...Array.from({ length: 6 }, (_, i) => ({
+        id: 'temporary-' + i, episodeNumber: i + 2, sourceEpisodeId: 3800000 + i,
+        title: 'New ' + (i + 2), runtimeMinutes: 60,
+        airdate: null, summary: null, watched: false,
+      })),
+    ],
+  };
+  let batch = null;
+  let updateCalls = 0;
+  const client = {
+    from(table) {
+      if (table === 'watching_shows') return {
+        update: () => ({ eq: async () => ({ error: null }) }),
+      };
+      if (table === 'watching_seasons') return {
+        upsert: () => ({
+          select: () => ({ single: async () => ({ data: { id: 'season-db' }, error: null }) }),
+        }),
+      };
+      if (table === 'watching_episodes') return {
+        update: () => ({
+          eq: async () => { updateCalls += 1; return { error: null }; },
+        }),
+        upsert: (rows, options) => {
+          batch = { rows, options };
+          return { select: async () => ({
+            data: rows.map((row, i) => ({ id: 'persisted-' + i, episode_number: row.episode_number })),
+            error: null,
+          }) };
+        },
+      };
+      throw new Error('Unexpected table: ' + table);
+    },
+  };
+  const persisted = await createRepository(client).mergeFetchedMetadata('show', next, previous);
+  assert.equal(updateCalls, 0, 'unchanged watched episode must not be updated');
+  assert.equal(batch.rows.length, 6, 'new episodes should be inserted together');
+  assert.equal(batch.options.onConflict, 'season_id,episode_number');
+  assert.equal(batch.options.ignoreDuplicates, true);
+  assert.equal(batch.options.defaultToNull, false);
+  assert.equal(batch.rows.some(row => 'watched' in row), false);
+  assert.equal(persisted.episodes.length, 7);
+  assert.equal(persisted.episodes[0].id, existingId);
+  assert.equal(persisted.episodes[0].watched, true);
+  assert.equal(persisted.episodes[6].id, 'persisted-5');
+});
