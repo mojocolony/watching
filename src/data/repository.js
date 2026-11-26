@@ -271,7 +271,7 @@ export function createRepository(client) {
         // Omitting watched prevents overwriting an existing viewing history.
         const rows = newEpisodes.map(episode => toSeasonEpisodeUpsert(dbSeason.id, episode));
         const { data, error: insertError } = await client.from('watching_episodes')
-          .upsert(rows, { onConflict: 'season_id,episode_number', ignoreDuplicates: true })
+          .upsert(rows, { onConflict: 'season_id,episode_number', ignoreDuplicates: true, defaultToNull: false })
           .select('id,episode_number');
         throwIf(insertError);
         for (const row of data ?? []) insertedIdsByNumber.set(Number(row.episode_number), row.id);
