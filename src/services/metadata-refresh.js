@@ -47,7 +47,9 @@ export function mergeTrackedShowMetadata(show, seasons, incomingEpisodes) {
     ...show,
     seasons: normalizedSeasons,
     totalSeasons,
-    episodes,
+    // Never silently discard known episodes when TVmaze briefly returns a
+    // partial season list. A subsequent complete refresh can add/update them.
+    episodes: episodes.length < existing.length ? existing : episodes,
   };
 }
 
