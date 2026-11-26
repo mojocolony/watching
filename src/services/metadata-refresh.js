@@ -62,7 +62,7 @@ async function refreshOne(show, tvmaze, sourceUpdatedAt) {
   return { ...mergeTrackedShowMetadata(show, seasons, episodes), sourceUpdatedAt: sourceUpdatedAt ?? show.sourceUpdatedAt };
 }
 
-export async function refreshTrackedMetadata({ shows, lastCheckedAt, tvmaze, repository = null, now = new Date() }) {
+export async function refreshTrackedMetadata({ shows, lastCheckedAt, tvmaze, repository = null, now = new Date(), forceFullRefresh = false }) {
   const tracked = (shows ?? []).filter(show => show.source === 'tvmaze' && show.sourceShowId != null);
   if (tracked.length === 0) return { shows: (shows ?? []).map(show => ({ ...show })), checkedAt: now.toISOString(), changedShowIds: [] };
 
@@ -77,26 +77,33 @@ export async function refreshTrackedMetadata({ shows, lastCheckedAt, tvmaze, rep
   }
 
   const changed = new Map();
+  const failedShowIds = [];
   for (let offset = 0; offset < tracked.length; offset += 4) {
     const batch = tracked.slice(offset, offset + 4);
     const results = await Promise.all(batch.map(async show => {
       const sourceStamp = updates?.[String(show.sourceShowId)];
-      if (updates && sourceStamp == null && show.totalSeasons != null) return null;
+      if (!forceFullRefresh && updates && sourceStamp == null && show.totalSeasons != null) return null;
       try {
         const next = await refreshOne(show, tvmaze, sourceStamp);
         const didChange = JSON.stringify(next) !== JSON.stringify(show);
         if (didChange && repository?.mergeFetchedMetadata) {
-          const persisted = await repository.mergeFetchedMetadata(show.id, next);
+          const persisted = await repository.mergeFetchedMetadata(show.id, next, show);
           return persisted ?? next;
         }
         return didChange ? next : null;
       } catch {
+        failedShowIds.push(show.id);
         return null;
       }
     }));
     results.filter(Boolean).forEach(next => changed.set(next.id, next));
+    // TVmaze permits roughly 20 requests per 10 seconds. On full checks, a
+    // batch of four shows makes up to eight calls, so pace those batches.
+    if (forceFullRefresh && offset + 4 < tracked.length) {
+      await new Promise(resolve => setTimeout(resolve, 5500));
+    }
   }
 
   const nextShows = (shows ?? []).map(show => changed.get(show.id) ?? show);
-  return { shows: nextShows, checkedAt: now.toISOString(), changedShowIds: [...changed.keys()] };
+  return { shows: nextShows, checkedAt: now.toISOString(), changedShowIds: [...changed.keys()], failedShowIds };
 }
